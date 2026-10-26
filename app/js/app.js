@@ -1246,8 +1246,41 @@
   }
 
   // =========================================================================
-  // 10. INITIALIZATION
+  // 10. INITIALIZATION & SPLASH INTRO
   // =========================================================================
+
+  function initSplashScreen() {
+    const splash = document.getElementById('splash-screen');
+    const container = document.getElementById('splash-loader-container');
+    const skipBtn = document.getElementById('btn-skip-splash');
+    if (!splash) return;
+
+    let dismissed = false;
+    function dismissSplash() {
+      if (dismissed) return;
+      dismissed = true;
+      splash.classList.add('fade-out');
+      setTimeout(() => {
+        if (splash.parentNode) {
+          splash.parentNode.removeChild(splash);
+        }
+      }, 700);
+    }
+
+    if (skipBtn) {
+      skipBtn.addEventListener('click', dismissSplash);
+    }
+
+    // Start 4-second progress animation slightly after DOM paints
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        if (container) container.classList.add('start-loading');
+      }, 60);
+    });
+
+    // Automatically transition to main menu after 4 seconds (4000ms)
+    setTimeout(dismissSplash, 4100);
+  }
 
   function initApp() {
     loadPersistedData();
@@ -1255,6 +1288,7 @@
     initCompanionsList();
     initEventListeners();
     updateMainMenuPreview();
+    initSplashScreen();
   }
 
   // Launch when DOM is ready
