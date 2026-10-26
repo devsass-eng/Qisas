@@ -10,22 +10,11 @@ def slugify(text):
     return re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
 
 def clean_paragraph_text(raw_text):
-    """
-    Cleans extracted PDF text to make it flow naturally in HTML/e-reader:
-    - Normalizes multiple spaces
-    - Unifies quotes
-    - Joins soft line breaks within paragraphs while preserving intentional paragraph breaks
-    """
     if not raw_text:
         return ""
     
-    # Remove form feed characters
     text = raw_text.replace('\x0c', '\n')
-    
-    # Normalize common ligature artifacts
     text = text.replace('\xa0', ' ')
-    
-    # Split into lines
     lines = [line.strip() for line in text.split('\n')]
     
     paragraphs = []
@@ -42,12 +31,10 @@ def clean_paragraph_text(raw_text):
     if current_para:
         paragraphs.append(' '.join(current_para))
         
-    # Join paragraphs with double newline
-    cleaned = '\n\n'.join(paragraphs).strip()
-    return cleaned
+    return '\n\n'.join(paragraphs).strip()
 
 def extract_prophets():
-    print(">>> Extracting Stories of the Prophets text...")
+    print(">>> Extracting Stories of the Prophets with story-relative page numbers...")
     catalog = json.load(open('prophets_complete_catalog.json', encoding='utf-8'))
     reader = pypdf.PdfReader('app/assets/Stories_Of_The_Prophets.pdf')
     
@@ -63,14 +50,13 @@ def extract_prophets():
         p_id = p.get('id', slugify(p_name))
         start_pg = p['start_page']
         end_pg = p['end_page']
+        story_total_pages = end_pg - start_pg + 1
         headings = p.get('headings', [])
         
-        # Concatenate text from start_page to end_page, tagging page markers
         combined_text = ""
         for pg in range(start_pg, end_pg + 1):
             combined_text += f"\n---PAGE_{pg}---\n" + all_pages_text.get(pg, "")
             
-        # Segment text by headings
         sections = []
         heading_positions = []
         
@@ -78,7 +64,6 @@ def extract_prophets():
             htitle = h['title'].strip()
             hpage = h['page']
             
-            # Find in text
             pattern = re.escape(htitle)
             match = re.search(pattern, combined_text, re.IGNORECASE)
             
@@ -107,10 +92,26 @@ def extract_prophets():
             raw_section_text = re.sub(r'---PAGE_\d+---', '', raw_section_text)
             clean_text = clean_paragraph_text(raw_section_text)
             
+            # Story-relative page numbers starting at 1
+            sec_start_page = h_info['page'] - start_pg + 1
+            if i + 1 < len(headings):
+                next_sec_start_page = headings[i + 1]['page'] - start_pg + 1
+                sec_end_page = max(sec_start_page, next_sec_start_page)
+            else:
+                sec_end_page = story_total_pages
+                
+            if sec_start_page == sec_end_page:
+                sec_page_label = f"Page {sec_start_page}"
+            else:
+                sec_page_label = f"Pages {sec_start_page}–{sec_end_page}"
+                
             sections.append({
                 "id": f"{p_id}-sec-{i+1}",
                 "title": h_info['title'],
-                "page": h_info['page'],
+                "original_page": h_info['page'],
+                "story_start_page": sec_start_page,
+                "story_end_page": sec_end_page,
+                "story_page_label": sec_page_label,
                 "content": clean_text
             })
             
@@ -121,19 +122,20 @@ def extract_prophets():
             "id": p_id,
             "name": p_name,
             "arabic_name": p.get('arabic_name', ''),
-            "start_page": start_pg,
-            "end_page": end_pg,
+            "original_start_page": start_pg,
+            "original_end_page": end_pg,
+            "story_total_pages": story_total_pages,
             "summary": p.get('summary', ''),
             "sections_count": len(sections),
             "sections": sections,
             "full_text": clean_full_text
         })
         
-    print(f"  ✓ Processed {len(prophets_data)} prophets with {sum(p['sections_count'] for p in prophets_data)} sections.")
+    print(f"  ✓ Processed {len(prophets_data)} prophets with story-relative pages 1 to N.")
     return prophets_data
 
 def extract_companions():
-    print(">>> Extracting Stories of the Companions text...")
+    print(">>> Extracting Stories of the Companions with story-relative page numbers...")
     catalog = json.load(open('companions_complete_catalog.json', encoding='utf-8'))
     reader = pypdf.PdfReader('app/assets/Companions_of_the_Prophet.pdf')
     
@@ -149,6 +151,7 @@ def extract_companions():
         c_id = c.get('id', slugify(c_name))
         start_pg = c['start_page']
         end_pg = c['end_page']
+        story_total_pages = end_pg - start_pg + 1
         
         comp_text = ""
         for pg in range(start_pg, end_pg + 1):
@@ -156,7 +159,6 @@ def extract_companions():
             
         clean_text = clean_paragraph_text(comp_text)
         
-        # Remove companion name from beginning of text if it repeats as first line
         norm_name = re.sub(r'[\s\-]+', ' ', c_name).lower()
         first_p = clean_text.split('\n\n')[0] if clean_text else ''
         if re.sub(r'[\s\-]+', ' ', first_p).lower() == norm_name:
@@ -166,12 +168,16 @@ def extract_companions():
             "num": c.get('num', c_idx + 1),
             "id": c_id,
             "name": c_name,
-            "start_page": start_pg,
-            "end_page": end_pg,
+            "original_start_page": start_pg,
+            "original_end_page": end_pg,
+            "story_start_page": 1,
+            "story_end_page": story_total_pages,
+            "story_total_pages": story_total_pages,
+            "story_page_label": f"Pages 1–{story_total_pages}" if story_total_pages > 1 else "Page 1",
             "content": clean_text
         })
         
-    print(f"  ✓ Processed {len(companions_data)} companions.")
+    print(f"  ✓ Processed {len(companions_data)} companions with story-relative pages 1 to N.")
     return companions_data
 
 def main():
@@ -185,7 +191,7 @@ def main():
         json.dump(companions, f, ensure_ascii=False, indent=2)
         
     with open('app/js/prophets-text-data.js', 'w', encoding='utf-8') as f:
-        f.write("// Complete Unaltered Verbatim Texts - Stories of the Prophets (Ibn Kathir)\n")
+        f.write("// Complete Unaltered Verbatim Texts - Stories of the Prophets\n")
         f.write("window.PROPHETS_TEXT_DATA = " + json.dumps(prophets, ensure_ascii=False) + ";\n")
         
     with open('app/js/companions-text-data.js', 'w', encoding='utf-8') as f:

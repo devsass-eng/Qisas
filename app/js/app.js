@@ -226,16 +226,17 @@
         const card = document.createElement('div');
         card.className = 'list-item-card';
         const secCount = p.sections ? p.sections.length : (p.headings ? p.headings.length : 0);
+        const totalP = p.story_total_pages || (p.original_end_page ? (p.original_end_page - p.original_start_page + 1) : 1);
 
         card.innerHTML = `
           <div class="item-left">
             <div class="item-number">${p.num}</div>
             <div class="item-info">
               <div class="item-title">${escapeHtml(p.name)}</div>
-              <div class="item-subtext">${secCount} sections • Pages ${p.start_page} – ${p.end_page}</div>
+              <div class="item-subtext">${totalP} Pages (1–${totalP}) • ${secCount} Subtitles</div>
             </div>
           </div>
-          <div class="item-right-badge">View Sections</div>
+          <div class="item-right-badge">View Subtitles</div>
         `;
 
         card.addEventListener('click', () => {
@@ -263,7 +264,8 @@
 
     titleElem.textContent = prophet.name;
     const secCount = prophet.sections ? prophet.sections.length : (prophet.headings ? prophet.headings.length : 0);
-    metaElem.textContent = `${secCount} Original Subtitles • Pages ${prophet.start_page} – ${prophet.end_page}`;
+    const totalP = prophet.story_total_pages || (prophet.original_end_page ? (prophet.original_end_page - prophet.original_start_page + 1) : 1);
+    metaElem.textContent = `${secCount} Subtitles • Pages 1 – ${totalP}`;
 
     container.innerHTML = '';
 
@@ -271,6 +273,7 @@
 
     if (list.length > 0) {
       list.forEach((h, idx) => {
+        const pageLabel = h.story_page_label || (h.story_start_page ? `Page ${h.story_start_page}` : `Section ${idx + 1}`);
         const card = document.createElement('div');
         card.className = 'list-item-card';
         card.innerHTML = `
@@ -278,7 +281,7 @@
             <div class="item-number">${idx + 1}</div>
             <div class="item-info">
               <div class="item-title">${escapeHtml(h.title)}</div>
-              <div class="item-subtext">Original Section ${idx + 1}</div>
+              <div class="item-subtext">${pageLabel} of ${totalP}</div>
             </div>
           </div>
           <div class="item-right-badge">Read Subtitle</div>
@@ -336,12 +339,13 @@
 
         const card = document.createElement('div');
         card.className = 'list-item-card';
+        const totalP = c.story_total_pages || (c.original_end_page ? (c.original_end_page - c.original_start_page + 1) : 1);
         card.innerHTML = `
           <div class="item-left">
             <div class="item-number">${c.num}</div>
             <div class="item-info">
               <div class="item-title">${escapeHtml(c.name)}</div>
-              <div class="item-subtext">Original Biography • Pages ${c.start_page} – ${c.end_page}</div>
+              <div class="item-subtext">Original Biography • ${totalP} Pages (1–${totalP})</div>
             </div>
           </div>
           <div class="item-right-badge">Read Biography</div>
@@ -390,9 +394,11 @@
       document.getElementById('reader-book-title').textContent = prophet.name;
       document.getElementById('reader-item-subtitle').textContent = secTitle;
 
-      // Update Header Section Badge
+      // Update Header Section Badge (Shows story-relative page number and section)
       const badgeEl = document.getElementById('reader-current-page-num');
-      if (badgeEl) badgeEl.textContent = `Section ${state.activeSectionIndex + 1} of ${totalSec}`;
+      const totalP = prophet.story_total_pages || (prophet.original_end_page ? (prophet.original_end_page - prophet.original_start_page + 1) : 1);
+      const pageInfo = sec && sec.story_page_label ? sec.story_page_label : `Page ${sec ? sec.story_start_page || 1 : 1}`;
+      if (badgeEl) badgeEl.textContent = `${pageInfo} of ${totalP}`;
 
       // Populate Subtitle Navigation Bar
       const sectionsBar = document.getElementById('reader-sections-bar');
@@ -409,7 +415,8 @@
         prophet.sections.forEach((s, idx) => {
           const opt = document.createElement('option');
           opt.value = idx;
-          opt.textContent = `${idx + 1}. ${s.title}`;
+          const sPage = s.story_page_label ? ` (${s.story_page_label})` : '';
+          opt.textContent = `${idx + 1}. ${s.title}${sPage}`;
           if (idx === state.activeSectionIndex) opt.selected = true;
           selectSection.appendChild(opt);
         });
@@ -433,8 +440,9 @@
       document.getElementById('reader-book-title').textContent = companion.name;
       document.getElementById('reader-item-subtitle').textContent = 'Biography';
 
+      const totalCpPages = companion.story_total_pages || (companion.original_end_page ? (companion.original_end_page - companion.original_start_page + 1) : 1);
       const badgeEl = document.getElementById('reader-current-page-num');
-      if (badgeEl) badgeEl.textContent = 'Biography';
+      if (badgeEl) badgeEl.textContent = `Pages 1–${totalCpPages}`;
 
       const sectionsBar = document.getElementById('reader-sections-bar');
       if (sectionsBar) sectionsBar.style.display = 'none';
