@@ -2157,3 +2157,200 @@ body.theme-amoled .result-location {
     height: 32px;
   }
 }
+
+
+/* ==========================================================================
+   TTS LISTEN BAR
+   Fixed full-width bar at the very bottom of the reader screen
+   ========================================================================== */
+
+#screen-reader {
+  padding-bottom: 56px; /* make room for tts bar */
+}
+
+.tts-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.10);
+  transition: background 0.25s;
+  /* only visible when inside reader */
+  display: none;
+}
+
+/* Show bar only when reader screen is active */
+body.reader-active .tts-bar {
+  display: block;
+}
+
+/* ---- Idle row ---- */
+.tts-idle-row {
+  padding: 0;
+}
+
+.tts-start-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--emerald-800), var(--emerald-700));
+  color: #fff;
+  border: none;
+  font-size: 0.97rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: opacity 0.18s;
+}
+.tts-start-btn:active { opacity: 0.82; }
+
+/* ---- Active player row ---- */
+.tts-player-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--bg-surface-elevated);
+}
+
+.tts-ctrl-btn {
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.tts-ctrl-btn:active { opacity: 0.7; }
+
+.tts-playpause {
+  background: var(--emerald-700);
+  border-color: var(--emerald-700);
+  color: #fff;
+  padding: 8px 12px;
+}
+.tts-playpause:hover { background: var(--emerald-800); }
+
+.tts-stop-btn {
+  color: #e53e3e;
+  border-color: #e53e3e;
+}
+.tts-stop-btn:hover { background: #fff0f0; }
+
+/* Speed group */
+.tts-speed-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.tts-speed-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+.tts-speed-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-accent);
+  min-width: 32px;
+  text-align: center;
+}
+
+/* Progress bar + chunk counter */
+.tts-progress-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.tts-progress-track {
+  width: 100%;
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.tts-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--emerald-700), var(--gold-500));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+.tts-chunk-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* Word highlight inside story article */
+.tts-word-highlight {
+  background: rgba(52, 211, 153, 0.30);
+  border-radius: 3px;
+  padding: 0 1px;
+  transition: background 0.1s;
+}
+
+/* AMOLED overrides */
+body.theme-amoled .tts-bar {
+  background: #000;
+  border-color: #1a1a1a;
+}
+body.theme-amoled .tts-player-row {
+  background: #0a0a0a;
+}
+body.theme-amoled .tts-ctrl-btn {
+  background: #111;
+  border-color: #222;
+}
+
+/* Active paragraph being read by TTS */
+.tts-para-active {
+  background: rgba(52, 211, 153, 0.13);
+  border-left: 3px solid var(--emerald-700);
+  padding-left: 10px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+body.theme-amoled .tts-para-active {
+  background: rgba(52, 211, 153, 0.09);
+}
+
+/* TTS long-press "Play from here" popup */
+.tts-from-here-popup {
+  position: fixed;
+  z-index: 9999;
+  background: var(--emerald-800);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 24px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.28);
+  cursor: pointer;
+  white-space: nowrap;
+  animation: tts-popup-in 0.18s ease;
+  user-select: none;
+}
+.tts-from-here-popup:active { opacity: 0.8; }
+
+@keyframes tts-popup-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}

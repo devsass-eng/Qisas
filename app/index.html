@@ -327,6 +327,52 @@
       <div id="reader-floating-pill" class="floating-pill">
         <span id="pill-text">Section 1</span>
       </div>
+
+      <!-- ================================================ -->
+      <!-- TTS LISTEN BAR — fixed full-width at screen base -->
+      <!-- ================================================ -->
+      <div id="tts-bar" class="tts-bar tts-bar--idle">
+
+        <!-- IDLE STATE: single big Listen button -->
+        <div class="tts-idle-row" id="tts-idle-row">
+          <button id="btn-tts-start" class="tts-start-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+            <span>Listen to this Story</span>
+          </button>
+        </div>
+
+        <!-- ACTIVE STATE: player controls -->
+        <div class="tts-player-row" id="tts-player-row" style="display:none;">
+          <button id="btn-tts-restart" class="tts-ctrl-btn" title="Restart">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+          </button>
+          <button id="btn-tts-playpause" class="tts-ctrl-btn tts-playpause" title="Pause">
+            <svg id="tts-icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            <svg id="tts-icon-play"  width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button id="btn-tts-skip" class="tts-ctrl-btn" title="Skip paragraph">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14 4.96 3.5L8 16.14V9.86zM16 6h2v12h-2z"/></svg>
+          </button>
+
+          <div class="tts-speed-group">
+            <button id="btn-tts-speed-down" class="tts-speed-btn" title="Slower">🐢</button>
+            <span id="tts-speed-label" class="tts-speed-label">1.0×</span>
+            <button id="btn-tts-speed-up" class="tts-speed-btn" title="Faster">🐇</button>
+          </div>
+
+          <div class="tts-progress-wrap">
+            <div class="tts-progress-track">
+              <div id="tts-progress-fill" class="tts-progress-fill"></div>
+            </div>
+            <span id="tts-chunk-label" class="tts-chunk-label">0 / 0</span>
+          </div>
+
+          <button id="btn-tts-stop" class="tts-ctrl-btn tts-stop-btn" title="Stop listening">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+          </button>
+        </div>
+
+      </div><!-- /tts-bar -->
     </div>
 
     <!-- ========================================== -->

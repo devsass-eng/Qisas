@@ -523,14 +523,14 @@
 
         if (isQuote) {
           html += `
-            <div class="story-paragraph-wrapper">
+            <div class="story-paragraph-wrapper" data-para-index="${pIndex}">
               <blockquote class="story-quote-block">${safeP}</blockquote>
               ${copyBtn}
             </div>
           `;
         } else {
           html += `
-            <div class="story-paragraph-wrapper">
+            <div class="story-paragraph-wrapper" data-para-index="${pIndex}">
               <p class="story-paragraph">${safeP}</p>
               ${copyBtn}
             </div>
@@ -568,6 +568,10 @@
     }
 
     article.innerHTML = html;
+
+    // Fire event so TTS can attach long-press listeners to new content
+    document.dispatchEvent(new CustomEvent('story-rendered'));
+    document.dispatchEvent(new CustomEvent('story-section-changed'));
 
     // Attach bottom buttons
     const bottomPrev = document.getElementById('btn-bottom-prev');
@@ -1307,6 +1311,334 @@
     setTimeout(dismissSplash, 4100);
   }
 
+  // ===========================================================================
+  // TEXT-TO-SPEECH (TTS) ENGINE
+  // Uses Web Speech API (SpeechSynthesis) — 100% offline via device TTS engine
+  // ===========================================================================
+  function initTTS() {
+    if (!('speechSynthesis' in window)) return; // device has no TTS
+
+    const tts = {
+      synth: window.speechSynthesis,
+      chunks: [],        // array of paragraph text strings
+      chunkIndex: 0,
+      paused: false,
+      active: false,
+      rate: 1.0,
+      highlightEl: null, // span currently highlighted
+    };
+
+    const RATES = [0.5, 0.7, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0];
+
+    // DOM refs
+    const bar          = document.getElementById('tts-bar');
+    const idleRow      = document.getElementById('tts-idle-row');
+    const playerRow    = document.getElementById('tts-player-row');
+    const btnStart     = document.getElementById('btn-tts-start');
+    const btnPlayPause = document.getElementById('btn-tts-playpause');
+    const btnRestart   = document.getElementById('btn-tts-restart');
+    const btnSkip      = document.getElementById('btn-tts-skip');
+    const btnStop      = document.getElementById('btn-tts-stop');
+    const btnSpeedUp   = document.getElementById('btn-tts-speed-up');
+    const btnSpeedDn   = document.getElementById('btn-tts-speed-down');
+    const speedLabel   = document.getElementById('tts-speed-label');
+    const progressFill = document.getElementById('tts-progress-fill');
+    const chunkLabel   = document.getElementById('tts-chunk-label');
+    const iconPause    = document.getElementById('tts-icon-pause');
+    const iconPlay     = document.getElementById('tts-icon-play');
+
+    if (!bar || !btnStart) return;
+
+    // Show/hide bar when reader opens or closes
+    function showBar()  { document.body.classList.add('reader-active'); }
+    function hideBar()  { document.body.classList.remove('reader-active'); stopTTS(); }
+
+    // Intercept existing screen navigation to toggle bar
+    const origNavigateTo = window.navigateTo;
+    document.addEventListener('reader-opened', showBar);
+    document.addEventListener('reader-closed', hideBar);
+
+    // Also watch navigateTo — hook into showScreen
+    const _origShowScreen = window._showScreen;
+
+    // We patch the internal showScreen used by the app
+    // by observing classList changes on screen-reader
+    const readerScreen = document.getElementById('screen-reader');
+    if (readerScreen) {
+      const obs = new MutationObserver(() => {
+        if (readerScreen.classList.contains('active')) { showBar(); }
+        else { hideBar(); }
+      });
+      obs.observe(readerScreen, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // ---- Extract paragraphs from current article ----
+    function extractChunks() {
+      const article = document.getElementById('reader-story-article');
+      if (!article) return [];
+      const paras = article.querySelectorAll('p, .story-paragraph-wrapper p, h2, h3, blockquote');
+      const result = [];
+      paras.forEach(p => {
+        const txt = p.innerText.trim();
+        if (txt.length > 2) result.push({ el: p, text: txt });
+      });
+      return result;
+    }
+
+    // ---- Long-press to pick start point ----
+    // A floating pill appears near the paragraph: "▶ Play from here"
+    let longPressTimer = null;
+    let ttsPopup = null;
+
+    function removeTTSPopup() {
+      if (ttsPopup) { ttsPopup.remove(); ttsPopup = null; }
+    }
+
+    function showPlayFromHerePopup(paraEl, chunkIdx) {
+      removeTTSPopup();
+      const popup = document.createElement('div');
+      popup.className = 'tts-from-here-popup';
+      popup.textContent = '▶ Play from here';
+      popup.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeTTSPopup();
+        // prepare chunks if not already active
+        if (!tts.active) {
+          tts.chunks = extractChunks();
+        }
+        tts.active = true;
+        tts.paused = false;
+        idleRow.style.display = 'none';
+        playerRow.style.display = 'flex';
+        setPlayingIcon(true);
+        speakChunk(chunkIdx);
+      });
+
+      // Position popup near the paragraph
+      const rect = paraEl.getBoundingClientRect();
+      popup.style.top  = (rect.top + window.scrollY - 44) + 'px';
+      popup.style.left = Math.max(8, rect.left + (rect.width / 2) - 70) + 'px';
+      document.body.appendChild(popup);
+      ttsPopup = popup;
+
+      // Auto-dismiss after 4s
+      setTimeout(removeTTSPopup, 4000);
+    }
+
+    function attachLongPressToArticle() {
+      const article = document.getElementById('reader-story-article');
+      if (!article) return;
+
+      article.addEventListener('pointerdown', (e) => {
+        const wrapper = e.target.closest('.story-paragraph-wrapper');
+        if (!wrapper) return;
+        longPressTimer = setTimeout(() => {
+          // find which chunk this paragraph maps to
+          const chunks = extractChunks();
+          const paraEl = wrapper.querySelector('p, blockquote');
+          if (!paraEl) return;
+          const idx = chunks.findIndex(c => c.el === paraEl);
+          if (idx === -1) return;
+          tts.chunks = chunks; // cache for later use
+          showPlayFromHerePopup(paraEl, idx);
+        }, 500); // 500ms long press
+      });
+
+      article.addEventListener('pointerup',    () => clearTimeout(longPressTimer));
+      article.addEventListener('pointermove',  () => clearTimeout(longPressTimer));
+      article.addEventListener('pointercancel',() => clearTimeout(longPressTimer));
+    }
+
+    // Attach on every story load (article content is re-rendered each time)
+    document.addEventListener('story-rendered', attachLongPressToArticle);
+    // Also dismiss popup on any tap elsewhere
+    document.addEventListener('pointerdown', (e) => {
+      if (ttsPopup && !ttsPopup.contains(e.target)) removeTTSPopup();
+    });
+
+    // ---- Update progress UI ----
+    function updateProgress() {
+      const total = tts.chunks.length;
+      const pct = total > 0 ? Math.round((tts.chunkIndex / total) * 100) : 0;
+      progressFill.style.width = pct + '%';
+      chunkLabel.textContent = (tts.chunkIndex) + ' / ' + total;
+    }
+
+    // ---- Clear word highlight ----
+    function clearHighlight() {
+      if (tts.highlightEl) {
+        tts.highlightEl.classList.remove('tts-word-highlight');
+        tts.highlightEl = null;
+      }
+      // also clear any paragraph-level highlight
+      document.querySelectorAll('.tts-para-active').forEach(el => el.classList.remove('tts-para-active'));
+    }
+
+    // ---- Highlight paragraph being read & scroll to it ----
+    function highlightChunk(idx) {
+      clearHighlight();
+      if (!tts.chunks[idx]) return;
+      const el = tts.chunks[idx].el;
+      el.classList.add('tts-para-active');
+      tts.highlightEl = el;
+      // auto-scroll so it's visible
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // ---- Speak a single chunk ----
+    function speakChunk(idx) {
+      if (idx >= tts.chunks.length) {
+        // finished all chunks
+        stopTTS();
+        return;
+      }
+      tts.chunkIndex = idx;
+      updateProgress();
+      highlightChunk(idx);
+
+      const utt = new SpeechSynthesisUtterance(tts.chunks[idx].text);
+      utt.rate = tts.rate;
+      utt.lang = 'en-US';
+
+      utt.onend = () => {
+        if (!tts.paused && tts.active) {
+          speakChunk(idx + 1);
+        }
+      };
+      utt.onerror = (e) => {
+        if (e.error === 'interrupted' || e.error === 'canceled') return;
+        // skip broken chunk
+        if (tts.active) speakChunk(idx + 1);
+      };
+
+      tts.synth.cancel(); // clear queue
+      tts.synth.speak(utt);
+    }
+
+    // ---- Find first paragraph visible in the viewport ----
+    function findVisibleChunkIndex(chunks) {
+      const container = document.getElementById('story-reader-container');
+      const containerTop = container ? container.scrollTop : 0;
+      const viewportMid = containerTop + (window.innerHeight * 0.35);
+
+      let closest = 0;
+      let closestDist = Infinity;
+
+      chunks.forEach((chunk, i) => {
+        const rect = chunk.el.getBoundingClientRect();
+        // getBoundingClientRect is relative to viewport
+        if (rect.top >= 0 && rect.top < window.innerHeight) {
+          const dist = Math.abs(rect.top - window.innerHeight * 0.25);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closest = i;
+          }
+        }
+      });
+      return closest;
+    }
+
+    // ---- Start TTS ----
+    function startTTS() {
+      tts.chunks = extractChunks();
+      if (!tts.chunks.length) return;
+      tts.active = true;
+      tts.paused = false;
+
+      // Start from the paragraph currently visible on screen,
+      // not from the very beginning — so it continues where you left off reading
+      tts.chunkIndex = findVisibleChunkIndex(tts.chunks);
+
+      // switch UI
+      idleRow.style.display = 'none';
+      playerRow.style.display = 'flex';
+      setPlayingIcon(true);
+      speakChunk(tts.chunkIndex);
+    }
+
+    // ---- Stop TTS ----
+    function stopTTS() {
+      tts.active = false;
+      tts.paused = false;
+      tts.synth.cancel();
+      clearHighlight();
+      // reset UI to idle
+      idleRow.style.display = '';
+      playerRow.style.display = 'none';
+      progressFill.style.width = '0%';
+      chunkLabel.textContent = '0 / 0';
+    }
+
+    // ---- Toggle pause/resume ----
+    function togglePause() {
+      if (!tts.active) return;
+      if (tts.paused) {
+        tts.paused = false;
+        setPlayingIcon(true);
+        speakChunk(tts.chunkIndex); // resume from current chunk
+      } else {
+        tts.paused = true;
+        tts.synth.cancel();
+        setPlayingIcon(false);
+      }
+    }
+
+    // ---- Skip to next paragraph ----
+    function skipChunk() {
+      if (!tts.active) return;
+      tts.synth.cancel();
+      speakChunk(tts.chunkIndex + 1);
+    }
+
+    // ---- Restart ----
+    function restartTTS() {
+      tts.synth.cancel();
+      tts.paused = false;
+      setPlayingIcon(true);
+      speakChunk(0);
+    }
+
+    // ---- Speed control ----
+    function changeSpeed(dir) {
+      const rateIdx = RATES.indexOf(tts.rate);
+      const newIdx = Math.min(Math.max(rateIdx + dir, 0), RATES.length - 1);
+      tts.rate = RATES[newIdx];
+      speedLabel.textContent = tts.rate.toFixed(1) + '×';
+      // if playing, restart current chunk at new rate
+      if (tts.active && !tts.paused) {
+        tts.synth.cancel();
+        speakChunk(tts.chunkIndex);
+      }
+    }
+
+    // ---- Icon helper ----
+    function setPlayingIcon(playing) {
+      iconPause.style.display = playing ? '' : 'none';
+      iconPlay.style.display  = playing ? 'none' : '';
+    }
+
+    // ---- Also stop TTS when navigating away from reader ----
+    function onScreenChange() {
+      if (!readerScreen.classList.contains('active')) {
+        stopTTS();
+      }
+    }
+
+    // ---- Wire up buttons ----
+    btnStart.addEventListener('click', startTTS);
+    btnPlayPause.addEventListener('click', togglePause);
+    btnRestart.addEventListener('click', restartTTS);
+    btnSkip.addEventListener('click', skipChunk);
+    btnStop.addEventListener('click', stopTTS);
+    btnSpeedUp.addEventListener('click', () => changeSpeed(1));
+    btnSpeedDn.addEventListener('click', () => changeSpeed(-1));
+
+    // Stop when story changes (new section loaded)
+    document.addEventListener('story-section-changed', () => {
+      if (tts.active) stopTTS();
+    });
+  }
+
   function initApp() {
     loadPersistedData();
     initProphetsList();
@@ -1314,6 +1646,7 @@
     initEventListeners();
     updateMainMenuPreview();
     initSplashScreen();
+    initTTS();
   }
 
   // Launch when DOM is ready
