@@ -84,9 +84,13 @@
     applyFontSize(state.settings.fontSize || 18);
     applyFontFamily(state.settings.fontFamily || 'font-serif');
 
-    const fontSelect = document.getElementById('select-default-zoom');
-    if (fontSelect) {
-      fontSelect.value = String(state.settings.fontSize || 18);
+    const fontSlider = document.getElementById('slider-text-size');
+    const fontBadge = document.getElementById('font-size-val');
+    if (fontSlider) {
+      fontSlider.value = String(state.settings.fontSize || 18);
+    }
+    if (fontBadge) {
+      fontBadge.textContent = (state.settings.fontSize || 18) + 'px';
     }
 
     const familySelect = document.getElementById('select-font-family');
@@ -148,6 +152,16 @@
     if (article) {
       article.style.setProperty('--reading-font-size', s + 'px');
       article.style.fontSize = s + 'px';
+    }
+
+    const preview = document.getElementById('font-preview-sample');
+    if (preview) {
+      preview.style.fontSize = s + 'px';
+    }
+
+    const fontBadge = document.getElementById('font-size-val');
+    if (fontBadge) {
+      fontBadge.textContent = s + 'px';
     }
   }
 
@@ -1165,14 +1179,13 @@
       });
     });
 
-    // Reading Text Size Setting
-    const zoomSelect = document.getElementById('select-default-zoom');
-    if (zoomSelect) {
-      zoomSelect.value = String(state.settings.fontSize || 18);
-      zoomSelect.addEventListener('change', (e) => {
+    // Reading Text Size Interactive Adjustable Slider
+    const fontSlider = document.getElementById('slider-text-size');
+    if (fontSlider) {
+      fontSlider.value = String(state.settings.fontSize || 18);
+      fontSlider.addEventListener('input', (e) => {
         const newSize = parseInt(e.target.value, 10);
         if (isNaN(newSize)) return;
-        state.settings.fontSize = newSize;
         applyFontSize(newSize);
         saveSettings();
       });

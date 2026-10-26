@@ -408,14 +408,29 @@
 
           <div class="setting-group">
             <label class="setting-label">Reading Text Size</label>
-            <select id="select-default-zoom" class="custom-select">
-              <option value="16">16px (Small)</option>
-              <option value="18" selected>18px (Standard)</option>
-              <option value="20">20px (Comfortable)</option>
-              <option value="24">24px (Large)</option>
-              <option value="28">28px (Extra Large)</option>
-              <option value="32">32px (Huge)</option>
-            </select>
+            <div class="font-slider-wrapper">
+              <div class="font-slider-header">
+                <span>Adjust scale</span>
+                <span id="font-size-val" class="font-size-val-badge">18px</span>
+              </div>
+              <div class="font-slider-track-row">
+                <span class="font-slider-indicator-small">A</span>
+                <input 
+                  type="range" 
+                  id="slider-text-size" 
+                  class="font-slider-input" 
+                  min="14" 
+                  max="36" 
+                  step="1" 
+                  value="18" 
+                  aria-label="Reading Text Size Slider"
+                >
+                <span class="font-slider-indicator-large">A</span>
+              </div>
+              <div class="font-preview-sample" id="font-preview-sample">
+                In the name of Allah, Most Gracious, Most Merciful.
+              </div>
+            </div>
           </div>
 
           <div class="setting-group">
