@@ -1817,6 +1817,14 @@
 
     // Real-time sentence boundary highlight
     let currentChunkSentences = [];
+    let sentenceTimer = null;
+
+    function clearSentenceTimer() {
+      if (sentenceTimer) {
+        clearTimeout(sentenceTimer);
+        sentenceTimer = null;
+      }
+    }
 
     function prepareParagraphSentences(el) {
       if (!el) return [];
@@ -1825,16 +1833,23 @@
       }
       el.dataset.sentencesPrepared = 'true';
       const rawText = el.textContent || '';
-      const sentenceRegex = /[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g;
+      if (!rawText.trim()) return [];
+
+      // Match sentences including trailing punctuation, quotes, and brackets
+      const sentenceRegex = /[^.!?]+(?:[.!?]+["'”’)]*)(?:\s+|$)|[^.!?]+$/g;
       let match;
       let html = '';
+      let count = 0;
       while ((match = sentenceRegex.exec(rawText)) !== null) {
         const sText = match[0];
         const start = match.index;
         const end = match.index + sText.length;
         html += `<span class="tts-sentence" data-start="${start}" data-end="${end}">${escapeHtml(sText)}</span>`;
+        count++;
       }
-      if (!html) html = `<span class="tts-sentence" data-start="0" data-end="${rawText.length}">${escapeHtml(rawText)}</span>`;
+      if (!count) {
+        html = `<span class="tts-sentence" data-start="0" data-end="${rawText.length}">${escapeHtml(rawText)}</span>`;
+      }
       el.innerHTML = html;
       return Array.from(el.querySelectorAll('.tts-sentence'));
     }
@@ -1849,6 +1864,7 @@
 
     // ---- Clear word highlight ----
     function clearHighlight() {
+      clearSentenceTimer();
       if (tts.highlightEl) {
         tts.highlightEl.classList.remove('tts-para-active', 'style-tint_bar', 'style-bar_only', 'style-underline', 'tts-word-highlight');
         tts.highlightEl = null;
@@ -1877,9 +1893,14 @@
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
 
-      // Prepare sentences if sentence highlight is enabled
+      // Prepare sentences if sentence highlight is enabled and highlight first sentence immediately
       if (state.settings.highlightSentence !== false) {
         currentChunkSentences = prepareParagraphSentences(el);
+        if (currentChunkSentences.length) {
+          currentChunkSentences.forEach((s, sIdx) => {
+            s.classList.toggle('tts-sentence-active', sIdx === 0);
+          });
+        }
       } else {
         currentChunkSentences = [];
       }
@@ -1888,6 +1909,7 @@
     // ---- Speak a single chunk ----
     function speakChunk(idx) {
       if (idx >= tts.chunks.length) {
+        clearSentenceTimer();
         // finished all chunks in current section
         if (state.settings.ttsAutoNext) {
           tts.isAutoAdvancing = true;
@@ -1919,28 +1941,63 @@
       const utt = new SpeechSynthesisUtterance(tts.chunks[idx].text);
       configureUtterance(utt, tts.rate);
 
+      clearSentenceTimer();
+      let boundaryFired = false;
+
       // Sentence boundary event for real-time sentence highlighting
       utt.onboundary = (e) => {
+        boundaryFired = true;
         if (state.settings.highlightSentence === false) return;
         const charIdx = e.charIndex;
         if (charIdx === undefined || !currentChunkSentences.length) return;
-        currentChunkSentences.forEach(span => {
+        for (let i = 0; i < currentChunkSentences.length; i++) {
+          const span = currentChunkSentences[i];
           const start = parseInt(span.dataset.start, 10);
           const end = parseInt(span.dataset.end, 10);
           if (charIdx >= start && charIdx < end) {
-            span.classList.add('tts-sentence-active');
-          } else {
-            span.classList.remove('tts-sentence-active');
+            if (!span.classList.contains('tts-sentence-active')) {
+              currentChunkSentences.forEach(s => s.classList.remove('tts-sentence-active'));
+              span.classList.add('tts-sentence-active');
+            }
+            break;
           }
-        });
+        }
       };
 
+      // Fallback timer: if the device TTS doesn't fire onboundary events, advance sentences smoothly
+      if (currentChunkSentences.length > 1) {
+        let curSIdx = 0;
+        function scheduleSentenceFallback() {
+          clearSentenceTimer();
+          if (boundaryFired || !tts.active || tts.paused) return;
+          if (curSIdx >= currentChunkSentences.length - 1) return;
+
+          const sText = currentChunkSentences[curSIdx].textContent || '';
+          const wordCount = sText.trim().split(/\s+/).length || 5;
+          const wordsPerSec = (140 / 60) * (tts.rate || 1.0);
+          const durationMs = Math.max(1200, (wordCount / wordsPerSec) * 1000);
+
+          sentenceTimer = setTimeout(() => {
+            if (boundaryFired || !tts.active || tts.paused) return;
+            curSIdx++;
+            if (currentChunkSentences[curSIdx]) {
+              currentChunkSentences.forEach(s => s.classList.remove('tts-sentence-active'));
+              currentChunkSentences[curSIdx].classList.add('tts-sentence-active');
+              scheduleSentenceFallback();
+            }
+          }, durationMs);
+        }
+        scheduleSentenceFallback();
+      }
+
       utt.onend = () => {
+        clearSentenceTimer();
         if (!tts.paused && tts.active) {
           speakChunk(idx + 1);
         }
       };
       utt.onerror = (e) => {
+        clearSentenceTimer();
         if (e.error === 'interrupted' || e.error === 'canceled') return;
         // skip broken chunk
         if (tts.active) speakChunk(idx + 1);

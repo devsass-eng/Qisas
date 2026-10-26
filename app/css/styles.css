@@ -2381,16 +2381,30 @@ body.reader-active .tts-bar {
 
 /* Real-time sentence highlight */
 .tts-sentence {
-  transition: background-color 0.15s ease, color 0.15s ease;
-  border-radius: 3px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+  border-radius: 4px;
+  padding: 1px 2px;
 }
 .tts-sentence.tts-sentence-active {
-  background-color: rgba(5, 150, 105, 0.22);
-  color: var(--text-accent);
+  background-color: rgba(212, 175, 55, 0.28);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.45);
+  color: var(--text-main);
+  border-radius: 4px;
+}
+body.theme-light .tts-sentence.tts-sentence-active {
+  background-color: rgba(5, 150, 105, 0.18);
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.40);
+  color: #044e3b;
+}
+body.theme-warm .tts-sentence.tts-sentence-active {
+  background-color: rgba(184, 134, 11, 0.28);
+  box-shadow: 0 0 0 2px rgba(184, 134, 11, 0.45);
+  color: #2b1f0c;
 }
 body.theme-dark .tts-sentence.tts-sentence-active {
-  background-color: rgba(52, 211, 153, 0.28);
-  color: #a7f3d0;
+  background-color: rgba(52, 211, 153, 0.32);
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.60);
+  color: #ffffff;
 }
 
 /* Active paragraph being read by TTS */
