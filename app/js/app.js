@@ -24,7 +24,7 @@
     currentPdfDoc: null,
     currentPageNum: 1,
     totalPages: 1,
-    currentScale: 1.25,
+    currentScale: 1.0,
     pageRendering: false,
     pageNumPending: null,
     
@@ -46,7 +46,7 @@
     bookmarks: [],
     settings: {
       theme: 'theme-light',
-      defaultZoom: 1.25
+      defaultZoom: 1.0
     }
   };
 
@@ -471,9 +471,9 @@
     state.activeBook = collection;
     state.currentPageNum = targetPage || 1;
 
-    // Update Header Text
-    document.getElementById('reader-book-title').textContent = BOOK_TITLES[collection];
-    document.getElementById('reader-item-subtitle').textContent = headingTitle ? `${itemTitle} • ${headingTitle}` : itemTitle;
+    // Update Header Text: prioritize specific story/prophet/companion name
+    document.getElementById('reader-book-title').textContent = itemTitle || BOOK_TITLES[collection];
+    document.getElementById('reader-item-subtitle').textContent = headingTitle ? `${BOOK_TITLES[collection]} • ${headingTitle}` : BOOK_TITLES[collection];
 
     navigateTo('screen-reader');
 
@@ -486,6 +486,29 @@
   let renderingPages = new Set();
   let pageObserver = null;
   let scrollListenerAttached = false;
+  let resizeListenerAttached = false;
+
+  function getPageLayoutDimensions(page) {
+    const container = document.getElementById('pdf-viewer-container');
+    const isMobile = window.innerWidth <= 640;
+    // On mobile, use 12px total padding (6px on each side) to maximize reading width
+    const padding = isMobile ? 12 : 36;
+    const clientW = container.clientWidth || window.innerWidth;
+    const availableWidth = Math.max(clientW - padding, 240);
+    // On wide desktop monitors, cap base width at 860px for reading comfort, then scale with zoom
+    const baseWidth = isMobile ? availableWidth : Math.min(availableWidth, 860);
+
+    const unscaledViewport = page.getViewport({ scale: 1.0 });
+    const fitScale = (baseWidth / unscaledViewport.width) * state.currentScale;
+    const viewport = page.getViewport({ scale: fitScale });
+
+    return {
+      width: Math.floor(viewport.width),
+      height: Math.floor(viewport.height),
+      scale: fitScale,
+      viewport: viewport
+    };
+  }
 
   function loadPdfDocument(collection, url, initialPage) {
     const viewer = document.getElementById('pdf-viewer');
@@ -533,15 +556,7 @@
     const container = document.getElementById('pdf-viewer-container');
     viewer.innerHTML = '';
 
-    const containerWidth = Math.max(container.clientWidth - 32, 300);
-    const unscaledViewport = samplePage.getViewport({ scale: 1.0 });
-    let fitScale = containerWidth / unscaledViewport.width;
-    if (fitScale > 1.5) fitScale = 1.5;
-    const finalScale = fitScale * state.currentScale;
-    const viewport = samplePage.getViewport({ scale: finalScale });
-
-    const pageWidth = Math.floor(viewport.width);
-    const pageHeight = Math.floor(viewport.height);
+    const layout = getPageLayoutDimensions(samplePage);
 
     // Build wrappers for ALL pages so the document is continuously scrollable
     for (let i = 1; i <= state.totalPages; i++) {
@@ -549,9 +564,9 @@
       pageWrapper.className = 'pdf-page-wrapper';
       pageWrapper.id = 'pdf-page-' + i;
       pageWrapper.dataset.pageNum = i;
-      pageWrapper.style.width = pageWidth + 'px';
-      pageWrapper.style.minHeight = pageHeight + 'px';
-      pageWrapper.innerHTML = `<div class="page-loading-skeleton" style="min-height:${pageHeight}px;">Page ${i}</div>`;
+      pageWrapper.style.width = layout.width + 'px';
+      pageWrapper.style.minHeight = layout.height + 'px';
+      pageWrapper.innerHTML = `<div class="page-loading-skeleton" style="min-height:${layout.height}px;">Page ${i}</div>`;
       viewer.appendChild(pageWrapper);
     }
 
@@ -582,6 +597,24 @@
       }, { passive: true });
     }
 
+    // Window resize / orientation change listener to guarantee true responsiveness
+    if (!resizeListenerAttached) {
+      resizeListenerAttached = true;
+      let resizeTimer = null;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          if (state.currentScreen === 'screen-reader' && state.currentPdfDoc) {
+            renderedPages.clear();
+            renderingPages.clear();
+            state.currentPdfDoc.getPage(1).then(function (p) {
+              initContinuousScrollViewer(p, state.currentPageNum);
+            });
+          }
+        }, 180);
+      });
+    }
+
     // Jump to the requested page
     setTimeout(() => {
       scrollToPage(targetPage, false);
@@ -593,25 +626,19 @@
     renderingPages.add(pageNum);
 
     state.currentPdfDoc.getPage(pageNum).then(function (page) {
-      const container = document.getElementById('pdf-viewer-container');
-      const containerWidth = Math.max(container.clientWidth - 32, 300);
-      const unscaledViewport = page.getViewport({ scale: 1.0 });
-      let fitScale = containerWidth / unscaledViewport.width;
-      if (fitScale > 1.5) fitScale = 1.5;
-      const finalScale = fitScale * state.currentScale;
-      const viewport = page.getViewport({ scale: finalScale });
+      const layout = getPageLayoutDimensions(page);
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d', { alpha: false });
       const outputScale = window.devicePixelRatio || 1;
 
-      canvas.width = Math.floor(viewport.width * outputScale);
-      canvas.height = Math.floor(viewport.height * outputScale);
-      canvas.style.width = Math.floor(viewport.width) + 'px';
-      canvas.style.height = Math.floor(viewport.height) + 'px';
+      canvas.width = Math.floor(layout.width * outputScale);
+      canvas.height = Math.floor(layout.height * outputScale);
+      canvas.style.width = layout.width + 'px';
+      canvas.style.height = layout.height + 'px';
 
-      wrapper.style.width = Math.floor(viewport.width) + 'px';
-      wrapper.style.minHeight = Math.floor(viewport.height) + 'px';
+      wrapper.style.width = layout.width + 'px';
+      wrapper.style.minHeight = layout.height + 'px';
       wrapper.innerHTML = '';
       wrapper.appendChild(canvas);
 
@@ -620,7 +647,7 @@
       const renderContext = {
         canvasContext: ctx,
         transform: transform,
-        viewport: viewport
+        viewport: layout.viewport
       };
 
       page.render(renderContext).promise.then(function () {

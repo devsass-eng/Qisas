@@ -990,12 +990,14 @@ body.theme-dark .session-badge {
   display: flex;
   justify-content: center;
   align-items: center;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .pdf-page-wrapper canvas {
   display: block;
-  max-width: 100%;
-  height: auto;
+  max-width: 100% !important;
+  height: auto !important;
 }
 
 .page-loading-skeleton {
@@ -1488,9 +1490,71 @@ body.theme-dark .result-location {
     grid-template-columns: 1fr;
   }
   .reader-header {
-    padding: 0 8px;
+    height: 52px;
+    padding: 0 6px;
+    gap: 4px;
+  }
+  .reader-header-left {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+  .reader-title-info {
+    min-width: 0;
+    max-width: 140px;
+    overflow: hidden;
+  }
+  .reader-title-info h3 {
+    font-size: 0.88rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .reader-title-info span {
+    display: none;
+  }
+  .reader-header-controls {
+    flex-shrink: 0;
+    gap: 3px;
+  }
+  .page-nav {
+    padding: 2px 3px;
+    gap: 2px;
+  }
+  .page-input-wrapper span:first-child {
+    display: none;
+  }
+  .page-input-wrapper input {
+    width: 36px;
+    height: 24px;
+    font-size: 0.78rem;
+  }
+  #label-total-pages {
+    font-size: 0.75rem;
+  }
+  .page-step-btn {
+    width: 24px;
+    height: 24px;
+  }
+  .reader-btn {
+    width: 32px;
+    height: 32px;
+    padding: 4px;
+  }
+  .reader-btn svg {
+    width: 17px;
+    height: 17px;
   }
   .zoom-controls {
-    display: none; /* Hide zoom on small phones, pinch-to-zoom is available */
+    display: none; /* Hide zoom buttons on small phones */
+  }
+  .pdf-viewer {
+    padding: 10px 4px 80px 4px;
+    gap: 12px;
+  }
+  .pdf-page-wrapper {
+    max-width: 100% !important;
+    border-radius: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
   }
 }
