@@ -10,18 +10,21 @@
   <!-- Splash / Intro Screen with 4-second animated progress loading -->
   <div id="splash-screen" class="splash-screen">
     <div class="splash-content">
-      <div class="splash-logo-wrapper">
-        <img src="assets/logo.png" alt="Qisas" class="splash-logo">
-      </div>
-      <h1 class="splash-title">Qisas</h1>
-      <p class="splash-desc">Stories of the Prophets &amp; Companions<br>Authentic, unaltered source books preserved for offline reading.</p>
-      
-      <!-- Tiny loading bar that loads left to right within 4 seconds -->
-      <div class="splash-loader-container" id="splash-loader-container">
-        <div class="splash-loader-bar" id="splash-loader-bar"></div>
+      <div class="splash-main-group">
+        <div class="splash-logo-wrapper">
+          <img src="assets/logo.png" alt="Qisas" class="splash-logo">
+        </div>
+        <h1 class="splash-title">Qisas</h1>
+        <p class="splash-desc">Stories of the Prophets &amp; Companions<br>Authentic, unaltered source books preserved for offline reading.</p>
       </div>
       
-      <button id="btn-skip-splash" class="splash-skip-btn">Tap to skip</button>
+      <!-- Loading bar positioned at the bottom -->
+      <div class="splash-bottom-group">
+        <div class="splash-loader-container" id="splash-loader-container">
+          <div class="splash-loader-bar" id="splash-loader-bar"></div>
+        </div>
+        <button id="btn-skip-splash" class="splash-skip-btn">Tap to skip</button>
+      </div>
     </div>
   </div>
 
