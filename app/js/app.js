@@ -1191,6 +1191,18 @@
       });
     }
 
+    // Reset Font Size to Default
+    const btnResetFont = document.getElementById('btn-reset-font-size');
+    if (btnResetFont) {
+      btnResetFont.addEventListener('click', () => {
+        const defaultSize = 18;
+        applyFontSize(defaultSize);
+        const sl = document.getElementById('slider-text-size');
+        if (sl) sl.value = String(defaultSize);
+        saveSettings();
+      });
+    }
+
     // Typography Font Family Setting
     const familySelect = document.getElementById('select-font-family');
     if (familySelect) {

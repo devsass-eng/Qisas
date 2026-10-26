@@ -444,6 +444,22 @@ body.theme-amoled .font-size-val-badge {
   font-style: italic;
 }
 
+.font-reset-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+.font-reset-btn:hover {
+  border-color: var(--emerald-700, #047857);
+  color: var(--text-accent, #10b981);
+}
+
 /* Swatch for AMOLED */
 .amoled-swatch {
   background: #000000;
