@@ -228,25 +228,25 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- 6. READER SCREEN (Full Offline PDF Reader) -->
+    <!-- 6. READER SCREEN (Native Digital Text)    -->
     <!-- ========================================== -->
     <div id="screen-reader" class="screen">
-      <!-- Collapsible / Floating Reader Header -->
+      <!-- Floating Reader Header -->
       <header class="reader-header" id="reader-toolbar">
         <div class="reader-header-left">
-          <button class="reader-btn" id="btn-reader-back" title="Back">
+          <button class="reader-btn" id="btn-reader-back" title="Back" aria-label="Back">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
           </button>
           <div class="reader-title-info">
             <h3 id="reader-book-title">Stories of the Prophets</h3>
-            <span id="reader-item-subtitle">Prophet Musa (AS) • Description of Pharaoh</span>
+            <span id="reader-item-subtitle">Informing the Angels About Adam</span>
           </div>
         </div>
 
         <div class="reader-header-controls">
-          <!-- Current Page Badge (e.g. Page 3) -->
-          <div class="reader-page-badge" id="reader-page-badge" title="Current Page">
-            Page <span id="reader-current-page-num">1</span>
+          <!-- Current Subtitle / Section Pill -->
+          <div class="reader-page-badge" id="reader-page-badge" title="Active Section">
+            <span id="reader-current-page-num">Section 1</span>
           </div>
 
           <!-- Settings Icon Button -->
@@ -256,16 +256,36 @@
         </div>
       </header>
 
-      <!-- PDF Canvas Container -->
-      <div id="pdf-viewer-container" class="pdf-container">
-        <div id="pdf-viewer" class="pdf-viewer">
-          <!-- Rendered PDF Pages go here -->
+      <!-- Digital Reader Container -->
+      <div id="story-reader-container" class="story-reader-container">
+        <!-- Subtitle Jump / Stepper Bar (shown when story has multiple subtitles) -->
+        <div id="reader-sections-bar" class="reader-sections-bar">
+          <button id="btn-prev-section" class="section-nav-btn" title="Previous Subtitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Prev</span>
+          </button>
+          <div class="section-select-wrapper">
+            <select id="select-active-section" class="section-dropdown" title="Select Subtitle">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <button id="btn-next-section" class="section-nav-btn" title="Next Subtitle">
+            <span>Next</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
         </div>
+
+        <!-- Main Reading Scroll Area -->
+        <main class="story-reader-main" id="story-reader-main">
+          <article id="reader-story-article" class="story-content">
+            <!-- Story content formatted with paragraphs injected here -->
+          </article>
+        </main>
       </div>
 
-      <!-- Quick Page Indicator on mobile / overlay -->
+      <!-- Quick Section Toast / Pill -->
       <div id="reader-floating-pill" class="floating-pill">
-        <span id="pill-text">Page 1 of 228</span>
+        <span id="pill-text">Section 1</span>
       </div>
     </div>
 
@@ -338,13 +358,14 @@
           </div>
 
           <div class="setting-group">
-            <label class="setting-label">Default Text / Page Zoom</label>
+            <label class="setting-label">Reading Text Size</label>
             <select id="select-default-zoom" class="custom-select">
-              <option value="1.0">100% (Standard - Fit Screen)</option>
-              <option value="1.25">125% (Comfortable - Larger Text)</option>
-              <option value="1.5">150% (Large Text)</option>
-              <option value="1.75">175% (Extra Large)</option>
-              <option value="2.0">200% (Maximum)</option>
+              <option value="16">16px (Small)</option>
+              <option value="18" selected>18px (Standard)</option>
+              <option value="20">20px (Comfortable)</option>
+              <option value="24">24px (Large)</option>
+              <option value="28">28px (Extra Large)</option>
+              <option value="32">32px (Huge)</option>
             </select>
           </div>
 
@@ -393,9 +414,9 @@
   <script src="js/prophets-data.js"></script>
   <script src="js/companions-data.js"></script>
   <script src="js/search-data.js"></script>
-  <!-- Embedded PDF Data Modules (Guarantees offline & file:/// protocol execution) -->
-  <script src="js/prophets-pdf-data.js"></script>
-  <script src="js/companions-pdf-data.js"></script>
+  <!-- Complete Verbatim Digital Text Modules (100% offline, zero CORS, instant loading) -->
+  <script src="js/prophets-text-data.js"></script>
+  <script src="js/companions-text-data.js"></script>
   <!-- Main application script -->
   <script src="js/app.js"></script>
 </body>
