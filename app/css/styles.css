@@ -1001,7 +1001,8 @@ body.theme-dark .session-badge {
   user-select: text;
   min-height: 100%;
   margin: 0 auto;
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
 }
 
 .pdf-page-wrapper {
@@ -1014,14 +1015,12 @@ body.theme-dark .session-badge {
   display: flex;
   justify-content: center;
   align-items: center;
-  max-width: 100%;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .pdf-page-wrapper canvas {
   display: block;
-  max-width: 100% !important;
-  height: auto !important;
 }
 
 .page-loading-skeleton {
@@ -1583,10 +1582,12 @@ body.theme-dark .result-location {
   .pdf-viewer {
     padding: 10px 4px 80px 4px;
     gap: 12px;
+    width: max-content;
+    min-width: 100%;
   }
   .pdf-page-wrapper {
-    max-width: 100% !important;
     border-radius: 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    flex-shrink: 0;
   }
 }

@@ -92,7 +92,11 @@
     }
 
     applyTheme(state.settings.theme);
-    state.currentScale = state.settings.defaultZoom || 1.25;
+    state.currentScale = state.settings.defaultZoom || 1.0;
+    const zoomSelect = document.getElementById('select-default-zoom');
+    if (zoomSelect) {
+      zoomSelect.value = String(state.currentScale);
+    }
     updateMainMenuPreview();
   }
 
@@ -442,24 +446,18 @@
     companions: 'Stories of the Companions'
   };
 
-  // In-memory cache for decoded PDF Uint8Array buffers
-  const pdfBytesCache = {};
-
   function getPdfData(collection) {
-    if (pdfBytesCache[collection]) {
-      return pdfBytesCache[collection];
-    }
     const b64 = (collection === 'prophets') ? window.PROPHETS_PDF_BASE64 : window.COMPANIONS_PDF_BASE64;
     if (!b64) return null;
 
     try {
+      // Decode fresh Uint8Array every time so worker postMessage transfers never detach a shared ArrayBuffer
       const binary = atob(b64);
       const len = binary.length;
       const bytes = new Uint8Array(len);
       for (let i = 0; i < len; i++) {
         bytes[i] = binary.charCodeAt(i);
       }
-      pdfBytesCache[collection] = bytes;
       return bytes;
     } catch (e) {
       console.error('Error decoding embedded PDF data:', e);
@@ -476,6 +474,12 @@
     document.getElementById('reader-item-subtitle').textContent = headingTitle ? `${BOOK_TITLES[collection]} • ${headingTitle}` : BOOK_TITLES[collection];
 
     navigateTo('screen-reader');
+
+    // If this book is already fully built and loaded in the viewer, smoothly jump without reloading!
+    if (state.loadedCollection === collection && state.currentPdfDoc && document.getElementById('pdf-page-' + state.currentPageNum)) {
+      scrollToPage(state.currentPageNum, false);
+      return;
+    }
 
     const pdfPath = PDF_FILES[collection];
     loadPdfDocument(collection, pdfPath, state.currentPageNum);
@@ -531,6 +535,7 @@
 
     window.pdfjsLib.getDocument(docSource).promise.then(function (pdfDoc) {
       state.currentPdfDoc = pdfDoc;
+      state.loadedCollection = collection;
       state.totalPages = pdfDoc.numPages;
 
       const pageBadgeNum = document.getElementById('reader-current-page-num');
@@ -561,6 +566,11 @@
     const viewer = document.getElementById('pdf-viewer');
     const container = document.getElementById('pdf-viewer-container');
     viewer.innerHTML = '';
+
+    if (pageObserver) {
+      pageObserver.disconnect();
+      pageObserver = null;
+    }
 
     const layout = getPageLayoutDimensions(samplePage);
 
@@ -726,7 +736,8 @@
     const newScale = Math.min(Math.max(state.currentScale + delta, 0.75), 2.5);
     if (newScale === state.currentScale) return;
     state.currentScale = newScale;
-    document.getElementById('label-zoom-level').textContent = Math.round(state.currentScale * 100) + '%';
+    const labelZoom = document.getElementById('label-zoom-level');
+    if (labelZoom) labelZoom.textContent = Math.round(state.currentScale * 100) + '%';
 
     renderedPages.clear();
     renderingPages.clear();
@@ -1216,15 +1227,31 @@
 
     // Default Zoom Setting
     const zoomSelect = document.getElementById('select-default-zoom');
-    zoomSelect.addEventListener('change', (e) => {
-      state.settings.defaultZoom = parseFloat(e.target.value);
-      state.currentScale = state.settings.defaultZoom;
-      document.getElementById('label-zoom-level').textContent = Math.round(state.currentScale * 100) + '%';
-      saveSettings();
-      if (state.currentScreen === 'screen-reader') {
-        queueRenderPage(state.currentPageNum);
-      }
-    });
+    if (zoomSelect) {
+      zoomSelect.value = String(state.settings.defaultZoom || 1.0);
+      zoomSelect.addEventListener('change', (e) => {
+        const newZoom = parseFloat(e.target.value);
+        if (isNaN(newZoom)) return;
+        state.settings.defaultZoom = newZoom;
+        state.currentScale = newZoom;
+        saveSettings();
+
+        const labelZoom = document.getElementById('label-zoom-level');
+        if (labelZoom) {
+          labelZoom.textContent = Math.round(state.currentScale * 100) + '%';
+        }
+
+        if (state.currentPdfDoc) {
+          renderedPages.clear();
+          renderingPages.clear();
+          state.currentPdfDoc.getPage(1).then(function (samplePage) {
+            initContinuousScrollViewer(samplePage, state.currentPageNum);
+          }).catch(function (err) {
+            console.error('Error re-rendering viewer for zoom:', err);
+          });
+        }
+      });
+    }
 
     // Reset Progress Confirmation
     document.getElementById('btn-reset-progress').addEventListener('click', () => {
