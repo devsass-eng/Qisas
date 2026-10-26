@@ -25,6 +25,15 @@
             <p class="brand-subtitle">Stories of the Prophets &amp; Companions</p>
           </div>
         </div>
+
+        <!-- Search Logo on top and middle of the app -->
+        <button id="btn-open-search" class="header-search-btn" aria-label="Search stories in both categories" title="Search all stories in both categories">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+
         <button id="btn-settings-header" class="icon-btn" aria-label="Settings" title="Settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
@@ -83,18 +92,6 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </div>
           </div>
-        </div>
-
-        <!-- Quick Access Actions -->
-        <div class="quick-tools">
-          <button id="btn-open-search" class="tool-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <span>Search Both Books</span>
-          </button>
-          <button id="btn-open-bookmarks" class="tool-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-            <span>Saved Bookmarks</span>
-          </button>
         </div>
 
         <footer class="menu-footer">
@@ -311,17 +308,17 @@
     <div id="modal-search" class="modal">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h3>Search Books</h3>
+          <h3>Search Stories in Both Categories</h3>
           <button class="close-btn" id="btn-close-search">&times;</button>
         </div>
         <div class="modal-search-bar">
-          <input type="text" id="input-global-search" placeholder="Type words or phrase (e.g. covenant, repentance, cave, flood)...">
+          <input type="text" id="input-global-search" placeholder="Search any prophet, companion, heading, or phrase (e.g. Musa, Bilal, cave, ark)...">
           <button id="btn-execute-search" class="action-btn-primary">Search</button>
         </div>
         <div class="search-scope-tabs">
-          <button class="tab-btn active" data-scope="all">Both Books</button>
+          <button class="tab-btn active" data-scope="all">Both Categories</button>
           <button class="tab-btn" data-scope="prophets">Stories of the Prophets</button>
-          <button class="tab-btn" data-scope="companions">Companions</button>
+          <button class="tab-btn" data-scope="companions">Stories of the Companions</button>
         </div>
         <div class="search-results-info" id="search-results-info">Enter a term to search original texts.</div>
         <div class="search-results-list" id="search-results-list">

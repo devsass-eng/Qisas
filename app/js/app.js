@@ -708,11 +708,61 @@
 
     const results = [];
     const maxResults = 80;
+    const matchedPages = new Set();
 
-    // Search Prophets if scope matches
+    // 1. Search story names and chapter headings directly across both categories
     if (currentSearchScope === 'all' || currentSearchScope === 'prophets') {
+      (state.prophets || []).forEach(pr => {
+        if (pr.name && pr.name.toLowerCase().includes(q)) {
+          results.push({
+            collection: 'prophets',
+            bookTitle: 'Stories of the Prophets',
+            itemTitle: pr.name,
+            headingTitle: 'Prophet Story (Page ' + pr.start_page + ')',
+            page: pr.start_page,
+            snippet: `<strong>Prophet Story:</strong> Complete story of ${escapeHtml(pr.name)} as recorded by Ibn Kathir.`
+          });
+          matchedPages.add('prophets_' + pr.start_page);
+        }
+        if (pr.headings && Array.isArray(pr.headings)) {
+          pr.headings.forEach(h => {
+            if (h.title && h.title.toLowerCase().includes(q)) {
+              results.push({
+                collection: 'prophets',
+                bookTitle: 'Stories of the Prophets',
+                itemTitle: pr.name,
+                headingTitle: h.title,
+                page: h.page,
+                snippet: `<strong>Section Heading:</strong> ${escapeHtml(h.title)} (in story of ${escapeHtml(pr.name)}).`
+              });
+              matchedPages.add('prophets_' + h.page);
+            }
+          });
+        }
+      });
+    }
+
+    if (currentSearchScope === 'all' || currentSearchScope === 'companions') {
+      (state.companions || []).forEach(cp => {
+        if (cp.name && cp.name.toLowerCase().includes(q)) {
+          results.push({
+            collection: 'companions',
+            bookTitle: 'Stories of the Companions',
+            itemTitle: cp.name,
+            headingTitle: 'Biography (Page ' + cp.start_page + ')',
+            page: cp.start_page,
+            snippet: `<strong>Companion Biography:</strong> Complete original biography of ${escapeHtml(cp.name)}.`
+          });
+          matchedPages.add('companions_' + cp.start_page);
+        }
+      });
+    }
+
+    // 2. Search Prophets full-text index
+    if (results.length < maxResults && (currentSearchScope === 'all' || currentSearchScope === 'prophets')) {
       const pIndex = window.PROPHETS_SEARCH_INDEX || [];
       for (const p of pIndex) {
+        if (matchedPages.has('prophets_' + p.page)) continue;
         const text = p.text.toLowerCase();
         const idx = text.indexOf(q);
         if (idx !== -1) {
@@ -733,16 +783,17 @@
             page: p.page,
             snippet: createSnippet(p.text, idx, q.length)
           });
-
+          matchedPages.add('prophets_' + p.page);
           if (results.length >= maxResults) break;
         }
       }
     }
 
-    // Search Companions if scope matches
+    // 3. Search Companions full-text index
     if (results.length < maxResults && (currentSearchScope === 'all' || currentSearchScope === 'companions')) {
       const cIndex = window.COMPANIONS_SEARCH_INDEX || [];
       for (const c of cIndex) {
+        if (matchedPages.has('companions_' + c.page)) continue;
         const text = c.text.toLowerCase();
         const idx = text.indexOf(q);
         if (idx !== -1) {
@@ -757,7 +808,7 @@
             page: c.page,
             snippet: createSnippet(c.text, idx, q.length)
           });
-
+          matchedPages.add('companions_' + c.page);
           if (results.length >= maxResults) break;
         }
       }
@@ -888,15 +939,27 @@
       openModal(modals.settings);
     });
 
-    // Quick Tools on Main Menu
-    document.getElementById('btn-open-search').addEventListener('click', () => {
-      openModal(modals.search);
-    });
+    // Top Middle Search Logo on Main Menu
+    const btnSearch = document.getElementById('btn-open-search');
+    if (btnSearch) {
+      btnSearch.addEventListener('click', () => {
+        openModal(modals.search);
+        currentSearchScope = 'all';
+        updateScopeTabs();
+        setTimeout(() => {
+          const inp = document.getElementById('input-global-search');
+          if (inp) inp.focus();
+        }, 120);
+      });
+    }
 
-    document.getElementById('btn-open-bookmarks').addEventListener('click', () => {
-      renderBookmarksModal();
-      openModal(modals.bookmarks);
-    });
+    const btnBookmarks = document.getElementById('btn-open-bookmarks');
+    if (btnBookmarks) {
+      btnBookmarks.addEventListener('click', () => {
+        renderBookmarksModal();
+        openModal(modals.bookmarks);
+      });
+    }
 
     // Modal Close Buttons
     document.getElementById('btn-close-search').addEventListener('click', () => closeModal(modals.search));
