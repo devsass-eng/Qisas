@@ -1904,6 +1904,50 @@ body.theme-dark .result-location {
   outline: none;
 }
 
+.tts-setting-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tts-sublabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.tts-setting-action {
+  margin-top: 10px;
+}
+
+.btn-voice-preview {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-accent);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-voice-preview:hover {
+  border-color: var(--emerald-700);
+  background-color: var(--bg-surface-elevated);
+}
+
+.btn-voice-preview.is-speaking {
+  background-color: rgba(16, 185, 129, 0.15);
+  border-color: var(--emerald-600);
+}
+
 .btn-destructive {
   background-color: rgba(239, 68, 68, 0.1);
   color: #ef4444;

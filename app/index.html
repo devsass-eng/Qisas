@@ -482,6 +482,36 @@
           </div>
 
           <div class="setting-group">
+            <label class="setting-label">Narrator &amp; Audio Reader</label>
+            <p class="setting-hint">Customize voice persona (male, female, young, elder) and select your preferred device voice.</p>
+
+            <div class="tts-setting-field">
+              <label class="tts-sublabel" for="select-tts-persona">Reader Persona &amp; Tone</label>
+              <select id="select-tts-persona" class="custom-select">
+                <option value="balanced" selected>Standard Narrator (Balanced &amp; Natural)</option>
+                <option value="male_mature">Mature Male (Calm &amp; Deep)</option>
+                <option value="elder">Elder Storyteller (Deep &amp; Dignified)</option>
+                <option value="female_gentle">Gentle Female (Soft &amp; Clear)</option>
+                <option value="young_clear">Young Reader (Lively &amp; Clear)</option>
+              </select>
+            </div>
+
+            <div class="tts-setting-field">
+              <label class="tts-sublabel" for="select-tts-voice">Installed System Voice</label>
+              <select id="select-tts-voice" class="custom-select">
+                <option value="">Auto (Matches Reader Persona)</option>
+              </select>
+            </div>
+
+            <div class="tts-setting-action">
+              <button type="button" id="btn-preview-tts" class="btn-voice-preview" title="Listen to a voice sample">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                <span id="preview-tts-label">Preview Reader Voice</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-group">
             <label class="setting-label">Reading Progress Management</label>
             <p class="setting-hint">All reading positions and bookmarks are saved securely on this device.</p>
             <button id="btn-reset-progress" class="btn-destructive">

@@ -30,7 +30,9 @@
     settings: {
       theme: 'theme-light',
       fontSize: 18,
-      fontFamily: 'font-serif'
+      fontFamily: 'font-serif',
+      ttsPersona: 'balanced',
+      ttsVoiceURI: ''
     }
   };
 
@@ -97,6 +99,13 @@
     if (familySelect) {
       familySelect.value = state.settings.fontFamily || 'font-serif';
     }
+
+    const personaSelect = document.getElementById('select-tts-persona');
+    if (personaSelect) {
+      personaSelect.value = state.settings.ttsPersona || 'balanced';
+    }
+
+    populateTTSVoicesDropdown();
 
     updateMainMenuPreview();
   }
@@ -1215,6 +1224,56 @@
       });
     }
 
+    // Narrator Persona & Voice Settings
+    const personaSelect = document.getElementById('select-tts-persona');
+    if (personaSelect) {
+      personaSelect.value = state.settings.ttsPersona || 'balanced';
+      personaSelect.addEventListener('change', (e) => {
+        state.settings.ttsPersona = e.target.value;
+        saveSettings();
+      });
+    }
+
+    const voiceSelect = document.getElementById('select-tts-voice');
+    if (voiceSelect) {
+      voiceSelect.addEventListener('change', (e) => {
+        state.settings.ttsVoiceURI = e.target.value;
+        saveSettings();
+      });
+    }
+
+    const btnPreviewVoice = document.getElementById('btn-preview-tts');
+    const previewLabel = document.getElementById('preview-tts-label');
+    if (btnPreviewVoice && ('speechSynthesis' in window)) {
+      btnPreviewVoice.addEventListener('click', () => {
+        if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel();
+          btnPreviewVoice.classList.remove('is-speaking');
+          if (previewLabel) previewLabel.textContent = 'Preview Reader Voice';
+          return;
+        }
+
+        const sampleText = "In the name of Allah, Most Gracious, Most Merciful. Welcome to Qisas.";
+        const testUtt = new SpeechSynthesisUtterance(sampleText);
+        configureUtterance(testUtt, 1.0);
+
+        btnPreviewVoice.classList.add('is-speaking');
+        if (previewLabel) previewLabel.textContent = 'Speaking sample... (Tap to stop)';
+
+        testUtt.onend = () => {
+          btnPreviewVoice.classList.remove('is-speaking');
+          if (previewLabel) previewLabel.textContent = 'Preview Reader Voice';
+        };
+        testUtt.onerror = () => {
+          btnPreviewVoice.classList.remove('is-speaking');
+          if (previewLabel) previewLabel.textContent = 'Preview Reader Voice';
+        };
+
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(testUtt);
+      });
+    }
+
     // Zen Mode Toggles
     const btnToggleZen = document.getElementById('btn-toggle-zen');
     if (btnToggleZen) {
@@ -1312,9 +1371,134 @@
   }
 
   // ===========================================================================
-  // TEXT-TO-SPEECH (TTS) ENGINE
+  // TEXT-TO-SPEECH (TTS) CONFIGURATION & ENGINE
   // Uses Web Speech API (SpeechSynthesis) — 100% offline via device TTS engine
   // ===========================================================================
+
+  const TTS_PERSONAS = {
+    balanced: {
+      pitch: 1.0,
+      rateMod: 1.0,
+      gender: null
+    },
+    male_mature: {
+      pitch: 0.82,
+      rateMod: 0.95,
+      gender: 'male'
+    },
+    elder: {
+      pitch: 0.68,
+      rateMod: 0.88,
+      gender: 'male'
+    },
+    female_gentle: {
+      pitch: 1.18,
+      rateMod: 1.0,
+      gender: 'female'
+    },
+    young_clear: {
+      pitch: 1.38,
+      rateMod: 1.05,
+      gender: null
+    }
+  };
+
+  function configureUtterance(utt, baseRate) {
+    if (!('speechSynthesis' in window)) return;
+    const synth = window.speechSynthesis;
+    const voices = synth.getVoices() || [];
+    const personaKey = state.settings.ttsPersona || 'balanced';
+    const persona = TTS_PERSONAS[personaKey] || TTS_PERSONAS.balanced;
+
+    let chosenVoice = null;
+
+    // 1. Explicit user choice from settings dropdown
+    if (state.settings.ttsVoiceURI) {
+      chosenVoice = voices.find(v => (v.voiceURI === state.settings.ttsVoiceURI) || (v.name === state.settings.ttsVoiceURI));
+    }
+
+    // 2. Persona preference based on gender if available
+    if (!chosenVoice && persona.gender) {
+      const enVoices = voices.filter(v => (v.lang || '').toLowerCase().startsWith('en'));
+      const pool = enVoices.length ? enVoices : voices;
+
+      chosenVoice = pool.find(v => {
+        const info = ((v.name || '') + ' ' + (v.voiceURI || '')).toLowerCase();
+        if (persona.gender === 'female') {
+          return info.includes('female') || info.includes('zira') || info.includes('samantha') || 
+                 info.includes('victoria') || info.includes('karen') || info.includes('hazel') || 
+                 info.includes('susan') || info.includes('catherine');
+        } else if (persona.gender === 'male') {
+          return info.includes('male') || info.includes('david') || info.includes('mark') || 
+                 info.includes('george') || info.includes('richard');
+        }
+        return false;
+      });
+    }
+
+    // 3. Fallback to primary English voice or first device voice
+    if (!chosenVoice && voices.length) {
+      chosenVoice = voices.find(v => (v.lang || '').toLowerCase().startsWith('en')) || voices[0];
+    }
+
+    if (chosenVoice) {
+      utt.voice = chosenVoice;
+      utt.lang = chosenVoice.lang || 'en-US';
+    } else {
+      utt.lang = 'en-US';
+    }
+
+    utt.pitch = persona.pitch;
+    utt.rate = (baseRate || 1.0) * persona.rateMod;
+  }
+
+  function populateTTSVoicesDropdown() {
+    const voiceSelect = document.getElementById('select-tts-voice');
+    if (!voiceSelect || !('speechSynthesis' in window)) return;
+
+    const voices = window.speechSynthesis.getVoices() || [];
+    if (!voices.length) return;
+
+    const savedVoiceURI = state.settings.ttsVoiceURI || '';
+    voiceSelect.innerHTML = '<option value="">Auto (Matches Reader Persona)</option>';
+
+    // Sort English voices first, then alphabetically
+    const sorted = voices.slice().sort((a, b) => {
+      const aEn = (a.lang || '').toLowerCase().startsWith('en') ? 0 : 1;
+      const bEn = (b.lang || '').toLowerCase().startsWith('en') ? 0 : 1;
+      if (aEn !== bEn) return aEn - bEn;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    sorted.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.voiceURI || v.name;
+
+      let genderHint = '';
+      const info = ((v.name || '') + ' ' + (v.voiceURI || '')).toLowerCase();
+      if (info.includes('female') || info.includes('zira') || info.includes('samantha') || 
+          info.includes('victoria') || info.includes('karen') || info.includes('hazel') || 
+          info.includes('susan') || info.includes('catherine')) {
+        genderHint = ' [Female]';
+      } else if (info.includes('male') || info.includes('david') || info.includes('mark') || 
+                 info.includes('george') || info.includes('richard')) {
+        genderHint = ' [Male]';
+      }
+
+      opt.textContent = `${v.name}${genderHint} (${v.lang})`;
+      if (savedVoiceURI && (v.voiceURI === savedVoiceURI || v.name === savedVoiceURI)) {
+        opt.selected = true;
+      }
+      voiceSelect.appendChild(opt);
+    });
+  }
+
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      populateTTSVoicesDropdown();
+    };
+  }
+
   function initTTS() {
     if (!('speechSynthesis' in window)) return; // device has no TTS
 
@@ -1348,6 +1532,8 @@
     const iconPlay     = document.getElementById('tts-icon-play');
 
     if (!bar || !btnStart) return;
+
+    populateTTSVoicesDropdown();
 
     // Show/hide bar when reader opens or closes
     function showBar()  { document.body.classList.add('reader-active'); }
@@ -1497,8 +1683,7 @@
       highlightChunk(idx);
 
       const utt = new SpeechSynthesisUtterance(tts.chunks[idx].text);
-      utt.rate = tts.rate;
-      utt.lang = 'en-US';
+      configureUtterance(utt, tts.rate);
 
       utt.onend = () => {
         if (!tts.paused && tts.active) {
