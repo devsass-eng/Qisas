@@ -624,25 +624,34 @@
   function updateMainMenuPreview() {
     const pSub = document.getElementById('menu-prophets-subtitle');
     const cSub = document.getElementById('menu-companions-subtitle');
+    const lrBadge = document.getElementById('home-lastread-badge');
     const lrSub = document.getElementById('menu-lastread-subtitle');
 
-    if (state.progress.prophets) {
-      pSub.textContent = `Last read: ${state.progress.prophets.itemTitle}`;
-    } else {
-      pSub.textContent = '29 Prophets • Al-Imam Ibn Kathir';
+    if (pSub) {
+      pSub.textContent = '29 Prophets in original sequence • Complete original headings and scripture.';
     }
 
-    if (state.progress.companions) {
-      cSub.textContent = `Last read: ${state.progress.companions.itemTitle}`;
-    } else {
-      cSub.textContent = '60 Companions of the Prophet';
+    if (cSub) {
+      cSub.textContent = '60 Noble Companions • Complete original authentic biographies.';
     }
 
     if (state.progress.lastActiveCollection && state.progress[state.progress.lastActiveCollection]) {
-      const last = state.progress[state.progress.lastActiveCollection];
-      lrSub.textContent = `${last.itemTitle} • ${last.headingTitle || 'Reading Session'}`;
+      const coll = state.progress.lastActiveCollection;
+      const last = state.progress[coll];
+      if (lrBadge) {
+        lrBadge.textContent = coll === 'prophets' ? 'LAST READ: STORIES OF THE PROPHETS' : 'LAST READ: STORIES OF THE COMPANIONS';
+      }
+      if (lrSub) {
+        const pagePart = last.headingTitle ? last.headingTitle : 'Reading Session';
+        lrSub.textContent = `${last.itemTitle} • ${pagePart}`;
+      }
     } else {
-      lrSub.textContent = 'Resume your reading sessions';
+      if (lrBadge) {
+        lrBadge.textContent = 'READING PROGRESS';
+      }
+      if (lrSub) {
+        lrSub.textContent = 'No recent reading history. Tap to view saved sessions.';
+      }
     }
   }
 
