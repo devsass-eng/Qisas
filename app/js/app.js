@@ -128,7 +128,7 @@
   }
 
   function applyTheme(themeClass) {
-    document.body.classList.remove('theme-light', 'theme-warm', 'theme-dark', 'theme-amoled');
+    document.body.classList.remove('theme-light', 'theme-warm', 'theme-dark');
     document.body.classList.add(themeClass);
     state.settings.theme = themeClass;
     saveSettings();

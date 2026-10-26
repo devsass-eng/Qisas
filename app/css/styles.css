@@ -89,27 +89,6 @@ body.theme-dark {
   --pdf-filter: invert(0.92) hue-rotate(180deg) contrast(1.1) brightness(0.9);
 }
 
-/* AMOLED Pitch Black Theme */
-body.theme-amoled {
-  --bg-app: #000000;
-  --bg-surface: #000000;
-  --bg-surface-elevated: #0a0a0a;
-  --bg-card-subtle: #0d0d0d;
-  --border-color: #1a1a1a;
-  --border-focus: #34d399;
-
-  --text-main: #e8f0ec;
-  --text-secondary: #8ba89e;
-  --text-muted: #556860;
-  --text-accent: #34d399;
-  --text-gold: #e5c158;
-
-  --primary-btn-bg: #047857;
-  --primary-btn-text: #ffffff;
-  --card-hover-border: #d4af37;
-  --pdf-filter: invert(0.95) hue-rotate(180deg) contrast(1.2) brightness(0.85);
-}
-
 /* Reading Typography Options */
 body.font-serif #reader-story-article {
   font-family: "Times New Roman", Times, Georgia, "Traditional Arabic", serif;
@@ -398,8 +377,7 @@ body.zen-mode .zen-exit-floating-btn {
   border: 1px solid var(--emerald-600);
   font-size: 0.82rem;
 }
-body.theme-dark .font-size-val-badge,
-body.theme-amoled .font-size-val-badge {
+body.theme-dark .font-size-val-badge {
   background: #142a22;
   color: #34d399;
   border-color: #059669;
@@ -480,11 +458,6 @@ body.theme-amoled .font-size-val-badge {
   color: var(--text-accent, #10b981);
 }
 
-/* Swatch for AMOLED */
-.amoled-swatch {
-  background: #000000;
-  border: 1px solid #333333;
-}
 
 
 /* Base Reset */
@@ -583,15 +556,13 @@ html, body {
   height: 22px;
 }
 
-body.theme-dark .header-search-btn,
-body.theme-amoled .header-search-btn {
+body.theme-dark .header-search-btn {
   background-color: var(--bg-card-subtle);
   border-color: var(--border-color);
   color: var(--text-gold);
 }
 
-body.theme-dark .header-search-btn:hover,
-body.theme-amoled .header-search-btn:hover {
+body.theme-dark .header-search-btn:hover {
   background-color: var(--gold-500);
   color: #121815;
   border-color: var(--gold-500);
@@ -626,8 +597,7 @@ body.theme-warm .header-search-btn:hover {
   overflow: hidden;
 }
 
-body.theme-dark .logo-mark,
-body.theme-amoled .logo-mark {
+body.theme-dark .logo-mark {
   color: var(--text-gold);
 }
 
@@ -650,8 +620,7 @@ body.theme-amoled .logo-mark {
   color: var(--emerald-800);
 }
 
-body.theme-dark .brand-title,
-body.theme-amoled .brand-title {
+body.theme-dark .brand-title {
   color: #ffffff;
 }
 
@@ -832,13 +801,11 @@ body.theme-amoled .brand-title {
   border-radius: 14px;
 }
 
-body.theme-dark .card-icon-wrapper,
-body.theme-amoled .card-icon-wrapper {
+body.theme-dark .card-icon-wrapper {
   color: var(--text-gold);
 }
 
-body.theme-dark .card-icon-wrapper.card-icon-image,
-body.theme-amoled .card-icon-wrapper.card-icon-image {
+body.theme-dark .card-icon-wrapper.card-icon-image {
   background-color: transparent;
 }
 
@@ -927,8 +894,7 @@ body.theme-amoled .card-icon-wrapper.card-icon-image {
   color: var(--emerald-700);
 }
 
-body.theme-dark .tool-btn svg,
-body.theme-amoled .tool-btn svg {
+body.theme-dark .tool-btn svg {
   color: var(--text-gold);
 }
 
@@ -1035,8 +1001,7 @@ body.theme-amoled .tool-btn svg {
   border: 1px solid var(--border-color);
 }
 
-body.theme-dark .item-number,
-body.theme-amoled .item-number {
+body.theme-dark .item-number {
   color: var(--text-gold);
 }
 
@@ -1142,8 +1107,7 @@ body.theme-amoled .item-number {
   color: var(--emerald-700);
 }
 
-body.theme-dark .session-badge,
-body.theme-amoled .session-badge {
+body.theme-dark .session-badge {
   color: var(--text-gold);
 }
 
@@ -1750,8 +1714,7 @@ body.theme-amoled .session-badge {
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-body.theme-dark .tab-btn.active,
-body.theme-amoled .tab-btn.active {
+body.theme-dark .tab-btn.active {
   color: var(--text-gold);
 }
 
@@ -1794,8 +1757,7 @@ body.theme-amoled .tab-btn.active {
   justify-content: space-between;
 }
 
-body.theme-dark .result-location,
-body.theme-amoled .result-location {
+body.theme-dark .result-location {
   color: var(--text-gold);
 }
 
@@ -2307,19 +2269,6 @@ body.reader-active .tts-bar {
   transition: background 0.1s;
 }
 
-/* AMOLED overrides */
-body.theme-amoled .tts-bar {
-  background: #000;
-  border-color: #1a1a1a;
-}
-body.theme-amoled .tts-player-row {
-  background: #0a0a0a;
-}
-body.theme-amoled .tts-ctrl-btn {
-  background: #111;
-  border-color: #222;
-}
-
 /* Active paragraph being read by TTS */
 .tts-para-active {
   background: rgba(52, 211, 153, 0.13);
@@ -2327,9 +2276,6 @@ body.theme-amoled .tts-ctrl-btn {
   padding-left: 10px;
   border-radius: 4px;
   transition: background 0.2s;
-}
-body.theme-amoled .tts-para-active {
-  background: rgba(52, 211, 153, 0.09);
 }
 
 /* TTS long-press "Play from here" popup */
