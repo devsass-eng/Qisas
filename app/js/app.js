@@ -533,9 +533,15 @@
       state.currentPdfDoc = pdfDoc;
       state.totalPages = pdfDoc.numPages;
 
-      document.getElementById('label-total-pages').textContent = `/ ${state.totalPages}`;
-      document.getElementById('input-current-page').max = state.totalPages;
-      document.getElementById('input-current-page').value = initialPage;
+      const pageBadgeNum = document.getElementById('reader-current-page-num');
+      if (pageBadgeNum) pageBadgeNum.textContent = initialPage;
+      const labelTotal = document.getElementById('label-total-pages');
+      if (labelTotal) labelTotal.textContent = `/ ${state.totalPages}`;
+      const inputCur = document.getElementById('input-current-page');
+      if (inputCur) {
+        inputCur.max = state.totalPages;
+        inputCur.value = initialPage;
+      }
 
       // Sample first page to determine dimensions, then build all continuous pages
       pdfDoc.getPage(1).then(function (samplePage) {
@@ -680,7 +686,10 @@
 
     if (activePage !== state.currentPageNum) {
       state.currentPageNum = activePage;
-      document.getElementById('input-current-page').value = activePage;
+      const pageBadgeNum = document.getElementById('reader-current-page-num');
+      if (pageBadgeNum) pageBadgeNum.textContent = activePage;
+      const inputCur = document.getElementById('input-current-page');
+      if (inputCur) inputCur.value = activePage;
       showPageFloatingPill(activePage);
       saveCurrentReadingProgress();
       updateReaderBookmarkIcon();
@@ -694,7 +703,10 @@
     if (p > state.totalPages) p = state.totalPages;
 
     state.currentPageNum = p;
-    document.getElementById('input-current-page').value = p;
+    const pageBadgeNum = document.getElementById('reader-current-page-num');
+    if (pageBadgeNum) pageBadgeNum.textContent = p;
+    const inputCur = document.getElementById('input-current-page');
+    if (inputCur) inputCur.value = p;
 
     const targetWrapper = document.getElementById('pdf-page-' + p);
     if (targetWrapper) {
@@ -1060,41 +1072,72 @@
       }
     });
 
-    // Reader Controls
-    document.getElementById('btn-prev-page').addEventListener('click', () => {
-      if (state.currentPageNum > 1) goToPage(state.currentPageNum - 1);
-    });
+    // Reader Settings Button
+    const btnReaderSettings = document.getElementById('btn-reader-settings');
+    if (btnReaderSettings) {
+      btnReaderSettings.addEventListener('click', () => {
+        openModal(modals.settings);
+      });
+    }
 
-    document.getElementById('btn-next-page').addEventListener('click', () => {
-      if (state.currentPageNum < state.totalPages) goToPage(state.currentPageNum + 1);
-    });
+    // Optional / Legacy Reader Controls (guarded)
+    const btnPrevPage = document.getElementById('btn-prev-page');
+    if (btnPrevPage) {
+      btnPrevPage.addEventListener('click', () => {
+        if (state.currentPageNum > 1) goToPage(state.currentPageNum - 1);
+      });
+    }
 
-    document.getElementById('input-current-page').addEventListener('change', (e) => {
-      goToPage(e.target.value);
-    });
+    const btnNextPage = document.getElementById('btn-next-page');
+    if (btnNextPage) {
+      btnNextPage.addEventListener('click', () => {
+        if (state.currentPageNum < state.totalPages) goToPage(state.currentPageNum + 1);
+      });
+    }
 
-    document.getElementById('btn-zoom-in').addEventListener('click', () => {
-      handleZoomChange(0.25);
-    });
+    const inputCurrentPage = document.getElementById('input-current-page');
+    if (inputCurrentPage) {
+      inputCurrentPage.addEventListener('change', (e) => {
+        goToPage(e.target.value);
+      });
+    }
 
-    document.getElementById('btn-zoom-out').addEventListener('click', () => {
-      handleZoomChange(-0.25);
-    });
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    if (btnZoomIn) {
+      btnZoomIn.addEventListener('click', () => {
+        handleZoomChange(0.25);
+      });
+    }
 
-    document.getElementById('btn-reader-theme').addEventListener('click', () => {
-      const themes = ['theme-light', 'theme-warm', 'theme-dark'];
-      let nextIdx = (themes.indexOf(state.settings.theme) + 1) % themes.length;
-      applyTheme(themes[nextIdx]);
-    });
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    if (btnZoomOut) {
+      btnZoomOut.addEventListener('click', () => {
+        handleZoomChange(-0.25);
+      });
+    }
 
-    document.getElementById('btn-reader-bookmark').addEventListener('click', toggleCurrentBookmark);
+    const btnReaderTheme = document.getElementById('btn-reader-theme');
+    if (btnReaderTheme) {
+      btnReaderTheme.addEventListener('click', () => {
+        const themes = ['theme-light', 'theme-warm', 'theme-dark'];
+        let nextIdx = (themes.indexOf(state.settings.theme) + 1) % themes.length;
+        applyTheme(themes[nextIdx]);
+      });
+    }
 
-    document.getElementById('btn-reader-search').addEventListener('click', () => {
-      openModal(modals.search);
-      // Pre-set search scope to current book
-      currentSearchScope = state.activeBook || 'all';
-      updateScopeTabs();
-    });
+    const btnReaderBookmark = document.getElementById('btn-reader-bookmark');
+    if (btnReaderBookmark) {
+      btnReaderBookmark.addEventListener('click', toggleCurrentBookmark);
+    }
+
+    const btnReaderSearch = document.getElementById('btn-reader-search');
+    if (btnReaderSearch) {
+      btnReaderSearch.addEventListener('click', () => {
+        openModal(modals.search);
+        currentSearchScope = state.activeBook || 'all';
+        updateScopeTabs();
+      });
+    }
 
     // Header Settings Icon
     document.getElementById('btn-settings-header').addEventListener('click', () => {
