@@ -35,7 +35,10 @@
       ttsVoiceURI: '',
       ttsDefaultSpeed: 1.0,
       ttsAutoNext: true,
-      ttsHighlightStyle: 'tint_bar'
+      ttsHighlightStyle: 'tint_bar',
+      wakeLockListening: true,
+      autoScrollListening: true,
+      highlightSentence: true
     }
   };
 
@@ -121,6 +124,21 @@
     const highlightStyleSelect = document.getElementById('select-tts-highlight-style');
     if (highlightStyleSelect) {
       highlightStyleSelect.value = state.settings.ttsHighlightStyle || 'tint_bar';
+    }
+
+    const wakeLockToggle = document.getElementById('toggle-wake-lock');
+    if (wakeLockToggle) {
+      wakeLockToggle.checked = state.settings.wakeLockListening !== undefined ? state.settings.wakeLockListening : true;
+    }
+
+    const autoScrollToggle = document.getElementById('toggle-auto-scroll');
+    if (autoScrollToggle) {
+      autoScrollToggle.checked = state.settings.autoScrollListening !== undefined ? state.settings.autoScrollListening : true;
+    }
+
+    const highlightSentenceToggle = document.getElementById('toggle-highlight-sentence');
+    if (highlightSentenceToggle) {
+      highlightSentenceToggle.checked = state.settings.highlightSentence !== undefined ? state.settings.highlightSentence : true;
     }
 
     populateTTSVoicesDropdown();
@@ -1321,6 +1339,36 @@
       });
     }
 
+    // App Preferences: Keep screen awake while listening
+    const wakeLockToggle = document.getElementById('toggle-wake-lock');
+    if (wakeLockToggle) {
+      wakeLockToggle.checked = state.settings.wakeLockListening !== undefined ? state.settings.wakeLockListening : true;
+      wakeLockToggle.addEventListener('change', (e) => {
+        state.settings.wakeLockListening = e.target.checked;
+        saveSettings();
+      });
+    }
+
+    // App Preferences: Auto-scroll while listening
+    const autoScrollToggle = document.getElementById('toggle-auto-scroll');
+    if (autoScrollToggle) {
+      autoScrollToggle.checked = state.settings.autoScrollListening !== undefined ? state.settings.autoScrollListening : true;
+      autoScrollToggle.addEventListener('change', (e) => {
+        state.settings.autoScrollListening = e.target.checked;
+        saveSettings();
+      });
+    }
+
+    // App Preferences: Highlight current sentence
+    const highlightSentenceToggle = document.getElementById('toggle-highlight-sentence');
+    if (highlightSentenceToggle) {
+      highlightSentenceToggle.checked = state.settings.highlightSentence !== undefined ? state.settings.highlightSentence : true;
+      highlightSentenceToggle.addEventListener('change', (e) => {
+        state.settings.highlightSentence = e.target.checked;
+        saveSettings();
+      });
+    }
+
     const btnPreviewVoice = document.getElementById('btn-preview-tts');
     const previewLabel = document.getElementById('preview-tts-label');
     if (btnPreviewVoice && ('speechSynthesis' in window)) {
@@ -1687,6 +1735,7 @@
         }
         tts.active = true;
         tts.paused = false;
+        requestTTSWakeLock();
         idleRow.style.display = 'none';
         playerRow.style.display = 'flex';
         setPlayingIcon(true);
@@ -1735,6 +1784,61 @@
       if (ttsPopup && !ttsPopup.contains(e.target)) removeTTSPopup();
     });
 
+    // Screen Wake Lock while listening
+    let ttsWakeLock = null;
+
+    async function requestTTSWakeLock() {
+      if ('wakeLock' in navigator && state.settings.wakeLockListening) {
+        try {
+          if (!ttsWakeLock) {
+            ttsWakeLock = await navigator.wakeLock.request('screen');
+            ttsWakeLock.addEventListener('release', () => {
+              ttsWakeLock = null;
+            });
+          }
+        } catch (err) {
+          console.warn('Screen WakeLock error:', err);
+        }
+      }
+    }
+
+    function releaseTTSWakeLock() {
+      if (ttsWakeLock) {
+        ttsWakeLock.release().catch(() => {});
+        ttsWakeLock = null;
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && tts.active && !tts.paused) {
+        requestTTSWakeLock();
+      }
+    });
+
+    // Real-time sentence boundary highlight
+    let currentChunkSentences = [];
+
+    function prepareParagraphSentences(el) {
+      if (!el) return [];
+      if (el.dataset.sentencesPrepared === 'true') {
+        return Array.from(el.querySelectorAll('.tts-sentence'));
+      }
+      el.dataset.sentencesPrepared = 'true';
+      const rawText = el.textContent || '';
+      const sentenceRegex = /[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g;
+      let match;
+      let html = '';
+      while ((match = sentenceRegex.exec(rawText)) !== null) {
+        const sText = match[0];
+        const start = match.index;
+        const end = match.index + sText.length;
+        html += `<span class="tts-sentence" data-start="${start}" data-end="${end}">${escapeHtml(sText)}</span>`;
+      }
+      if (!html) html = `<span class="tts-sentence" data-start="0" data-end="${rawText.length}">${escapeHtml(rawText)}</span>`;
+      el.innerHTML = html;
+      return Array.from(el.querySelectorAll('.tts-sentence'));
+    }
+
     // ---- Update progress UI ----
     function updateProgress() {
       const total = tts.chunks.length;
@@ -1753,6 +1857,10 @@
       document.querySelectorAll('.tts-para-active').forEach(el => {
         el.classList.remove('tts-para-active', 'style-tint_bar', 'style-bar_only', 'style-underline');
       });
+      document.querySelectorAll('.tts-sentence-active').forEach(el => {
+        el.classList.remove('tts-sentence-active');
+      });
+      currentChunkSentences = [];
     }
 
     // ---- Highlight paragraph being read & scroll to it ----
@@ -1763,8 +1871,18 @@
       const style = state.settings.ttsHighlightStyle || 'tint_bar';
       el.classList.add('tts-para-active', `style-${style}`);
       tts.highlightEl = el;
-      // auto-scroll so it's visible
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Auto-scroll while listening (if enabled in preferences)
+      if (state.settings.autoScrollListening !== false) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      // Prepare sentences if sentence highlight is enabled
+      if (state.settings.highlightSentence !== false) {
+        currentChunkSentences = prepareParagraphSentences(el);
+      } else {
+        currentChunkSentences = [];
+      }
     }
 
     // ---- Speak a single chunk ----
@@ -1800,6 +1918,22 @@
 
       const utt = new SpeechSynthesisUtterance(tts.chunks[idx].text);
       configureUtterance(utt, tts.rate);
+
+      // Sentence boundary event for real-time sentence highlighting
+      utt.onboundary = (e) => {
+        if (state.settings.highlightSentence === false) return;
+        const charIdx = e.charIndex;
+        if (charIdx === undefined || !currentChunkSentences.length) return;
+        currentChunkSentences.forEach(span => {
+          const start = parseInt(span.dataset.start, 10);
+          const end = parseInt(span.dataset.end, 10);
+          if (charIdx >= start && charIdx < end) {
+            span.classList.add('tts-sentence-active');
+          } else {
+            span.classList.remove('tts-sentence-active');
+          }
+        });
+      };
 
       utt.onend = () => {
         if (!tts.paused && tts.active) {
@@ -1846,6 +1980,8 @@
       tts.active = true;
       tts.paused = false;
 
+      requestTTSWakeLock();
+
       // Start from the paragraph currently visible on screen,
       // not from the very beginning — so it continues where you left off reading
       tts.chunkIndex = findVisibleChunkIndex(tts.chunks);
@@ -1862,6 +1998,7 @@
       tts.active = false;
       tts.paused = false;
       tts.synth.cancel();
+      releaseTTSWakeLock();
       clearHighlight();
       // reset UI to idle
       idleRow.style.display = '';
@@ -1875,11 +2012,13 @@
       if (!tts.active) return;
       if (tts.paused) {
         tts.paused = false;
+        requestTTSWakeLock();
         setPlayingIcon(true);
         speakChunk(tts.chunkIndex); // resume from current chunk
       } else {
         tts.paused = true;
         tts.synth.cancel();
+        releaseTTSWakeLock();
         setPlayingIcon(false);
       }
     }

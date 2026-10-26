@@ -543,6 +543,43 @@
           </div>
 
           <div class="setting-group">
+            <label class="setting-label">App Preferences</label>
+
+            <div class="tts-setting-field tts-toggle-row">
+              <div class="tts-toggle-info">
+                <label class="tts-sublabel" for="toggle-wake-lock">Keep screen awake while listening</label>
+                <span class="setting-hint">Prevents the screen from dimming or locking during narration</span>
+              </div>
+              <label class="switch-toggle" for="toggle-wake-lock">
+                <input type="checkbox" id="toggle-wake-lock" checked>
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div class="tts-setting-field tts-toggle-row">
+              <div class="tts-toggle-info">
+                <label class="tts-sublabel" for="toggle-auto-scroll">Auto-scroll while listening</label>
+                <span class="setting-hint">Automatically keep the text being read centered on screen</span>
+              </div>
+              <label class="switch-toggle" for="toggle-auto-scroll">
+                <input type="checkbox" id="toggle-auto-scroll" checked>
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div class="tts-setting-field tts-toggle-row">
+              <div class="tts-toggle-info">
+                <label class="tts-sublabel" for="toggle-highlight-sentence">Highlight the current sentence</label>
+                <span class="setting-hint">Gives a live glow to the exact sentence being spoken (if supported)</span>
+              </div>
+              <label class="switch-toggle" for="toggle-highlight-sentence">
+                <input type="checkbox" id="toggle-highlight-sentence" checked>
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="setting-group">
             <label class="setting-label">Reading Progress Management</label>
             <p class="setting-hint">All reading positions and bookmarks are saved securely on this device.</p>
             <button id="btn-reset-progress" class="btn-destructive">
