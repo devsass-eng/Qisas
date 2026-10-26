@@ -1,0 +1,59 @@
+# Build outputs
+dist/
+dist-installer/
+dist-android/
+build/
+
+# Android build intermediates
+android_build/build/
+android_build/assets/
+
+# Tools (large downloads)
+tools/
+/pdfjs/
+
+# Node modules (from old Electron attempt)
+node_modules/
+package-lock.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.spec
+
+# Analysis/utility scripts (not needed in repo)
+analyze_pdfs.py
+build_catalogs.py
+check_companions_headings.py
+generate_icons.py
+generate_prophets_catalog.py
+inspect_companions.py
+inspect_fonts.py
+inspect_p101.py
+inspect_prophets.py
+prepare_app_assets.py
+scan_headings.py
+setup_android_tools.py
+test_musa.py
+verify_companions.py
+generate_android_icons.py
+regenerate_icons.py
+
+# Duplicate source PDFs in root (copies exist in app/assets/ and Assets/)
+/Stories Of The Prophets By Ibn Kathir.pdf
+/Companions of the Prophet1-1.pdf
+Assets/*.pdf
+
+# Duplicate JSON catalogs in root (bundled in app/js/)
+prophets_outline.json
+companions_outline.json
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini

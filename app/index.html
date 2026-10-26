@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Qisas</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- Bundled offline PDF.js -->
+  <script src="pdfjs/pdf.js"></script>
+</head>
+<body class="theme-light">
+  <div id="app-container">
+
+    <!-- ========================================== -->
+    <!-- 1. MAIN MENU SCREEN (No Dashboard!)       -->
+    <!-- ========================================== -->
+    <div id="screen-main-menu" class="screen active">
+      <header class="app-header">
+        <div class="brand">
+          <div class="logo-mark">
+            <img src="assets/logo.png" alt="Qisas" class="logo-img">
+          </div>
+          <div class="brand-text">
+            <h1 class="brand-title">Qisas</h1>
+            <p class="brand-subtitle">Stories of the Prophets &amp; Companions</p>
+          </div>
+        </div>
+        <button id="btn-settings-header" class="icon-btn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </header>
+
+      <main class="menu-container">
+        <div class="menu-intro">
+          <p class="intro-tagline">Authentic, unaltered original source books preserved for offline study.</p>
+        </div>
+
+        <div class="menu-destinations">
+          <!-- 1. Stories of the Prophets -->
+          <div class="nav-card primary-card" id="card-nav-prophets">
+            <div class="card-icon-wrapper card-icon-image">
+              <img src="assets/btn-prophets.png" alt="Stories of the Prophets">
+            </div>
+            <div class="card-content">
+              <div class="card-meta">Original Work by Ibn Kathir</div>
+              <h2 class="card-title">Stories of the Prophets</h2>
+              <p class="card-desc">29 Prophets in original sequence • Complete original headings and scripture.</p>
+            </div>
+            <div class="card-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </div>
+
+          <!-- 2. Stories of the Companions -->
+          <div class="nav-card primary-card" id="card-nav-companions">
+            <div class="card-icon-wrapper card-icon-image">
+              <img src="assets/btn-companions.png" alt="Stories of the Companions">
+            </div>
+            <div class="card-content">
+              <div class="card-meta">Biographies of the Sahaabah</div>
+              <h2 class="card-title">Stories of the Companions</h2>
+              <p class="card-desc">60 Noble Companions • Complete original authentic biographies.</p>
+            </div>
+            <div class="card-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </div>
+
+          <!-- 3. Last Read -->
+          <div class="nav-card secondary-card" id="card-nav-lastread">
+            <div class="card-icon-wrapper card-icon-image last-read-icon">
+              <img src="assets/btn-lastread.png" alt="Last Read">
+            </div>
+            <div class="card-content">
+              <div class="card-meta" id="home-lastread-badge">Reading Progress</div>
+              <h2 class="card-title">Last Read</h2>
+              <p class="card-desc" id="home-lastread-preview">No recent reading history. Tap to view saved sessions.</p>
+            </div>
+            <div class="card-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Access Actions -->
+        <div class="quick-tools">
+          <button id="btn-open-search" class="tool-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span>Search Both Books</span>
+          </button>
+          <button id="btn-open-bookmarks" class="tool-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            <span>Saved Bookmarks</span>
+          </button>
+        </div>
+
+        <footer class="menu-footer">
+          <span class="offline-badge">
+            <span class="dot"></span> 100% Offline Application • Preserved Source Material
+          </span>
+        </footer>
+      </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. PROPHETS LIST SCREEN                   -->
+    <!-- ========================================== -->
+    <div id="screen-prophets" class="screen">
+      <header class="sub-header">
+        <button class="back-btn" id="btn-back-prophets" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div class="sub-header-title">
+          <h2>Stories of the Prophets</h2>
+          <span>By Al-Imam Ibn Kathir</span>
+        </div>
+      </header>
+
+      <div class="search-filter-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="input-filter-prophets" placeholder="Filter prophets by name (e.g. Adam, Musa, Yusuf)...">
+      </div>
+
+      <div class="items-list-container" id="prophets-list">
+        <!-- Generated by JS -->
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. PROPHET HEADINGS SCREEN                -->
+    <!-- ========================================== -->
+    <div id="screen-prophet-headings" class="screen">
+      <header class="sub-header">
+        <button class="back-btn" id="btn-back-headings" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div class="sub-header-title">
+          <h2 id="prophet-headings-title">Prophet Name</h2>
+          <span id="prophet-headings-meta">Original PDF Headings</span>
+        </div>
+      </header>
+
+      <div class="headings-hero">
+        <button class="action-btn-primary" id="btn-start-prophet-beginning">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span>Read from Beginning of Story</span>
+        </button>
+        <div class="headings-notice">Select an actual heading below to jump directly into the original book:</div>
+      </div>
+
+      <div class="items-list-container" id="headings-list">
+        <!-- Generated by JS -->
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 4. COMPANIONS LIST SCREEN                 -->
+    <!-- ========================================== -->
+    <div id="screen-companions" class="screen">
+      <header class="sub-header">
+        <button class="back-btn" id="btn-back-companions" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div class="sub-header-title">
+          <h2>Stories of the Companions</h2>
+          <span>Biographies of the Sahaabah</span>
+        </div>
+      </header>
+
+      <div class="search-filter-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="input-filter-companions" placeholder="Filter companions by name (e.g. Abu Bakr, Salman, Ali)...">
+      </div>
+
+      <div class="items-list-container" id="companions-list">
+        <!-- Generated by JS -->
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 5. LAST READ SCREEN                       -->
+    <!-- ========================================== -->
+    <div id="screen-last-read" class="screen">
+      <header class="sub-header">
+        <button class="back-btn" id="btn-back-lastread" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div class="sub-header-title">
+          <h2>Last Read</h2>
+          <span>Saved Reading Sessions</span>
+        </div>
+      </header>
+
+      <main class="last-read-container">
+        <!-- Prophets Session Card -->
+        <div class="session-card" id="card-lastread-prophets">
+          <div class="session-badge">Stories of the Prophets</div>
+          <h3 class="session-title" id="lr-prophet-title">No reading history</h3>
+          <p class="session-subtitle" id="lr-prophet-subtitle">Open Stories of the Prophets to begin reading.</p>
+          <div class="session-meta" id="lr-prophet-meta">
+            <span id="lr-prophet-page">Page --</span>
+            <span id="lr-prophet-date"></span>
+          </div>
+          <button class="btn-continue-reading" id="btn-continue-prophets" disabled>
+            Continue Reading
+          </button>
+        </div>
+
+        <!-- Companions Session Card -->
+        <div class="session-card" id="card-lastread-companions">
+          <div class="session-badge">Stories of the Companions</div>
+          <h3 class="session-title" id="lr-companion-title">No reading history</h3>
+          <p class="session-subtitle" id="lr-companion-subtitle">Open Stories of the Companions to begin reading.</p>
+          <div class="session-meta" id="lr-companion-meta">
+            <span id="lr-companion-page">Page --</span>
+            <span id="lr-companion-date"></span>
+          </div>
+          <button class="btn-continue-reading" id="btn-continue-companions" disabled>
+            Continue Reading
+          </button>
+        </div>
+
+        <div class="empty-state-notice" id="lr-overall-notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <p>Progress is automatically saved to your device as you read.</p>
+        </div>
+      </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 6. READER SCREEN (Full Offline PDF Reader) -->
+    <!-- ========================================== -->
+    <div id="screen-reader" class="screen">
+      <!-- Collapsible / Floating Reader Header -->
+      <header class="reader-header" id="reader-toolbar">
+        <div class="reader-header-left">
+          <button class="reader-btn" id="btn-reader-back" title="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <div class="reader-title-info">
+            <h3 id="reader-book-title">Stories of the Prophets</h3>
+            <span id="reader-item-subtitle">Prophet Musa (AS) • Description of Pharaoh</span>
+          </div>
+        </div>
+
+        <div class="reader-header-controls">
+          <!-- Page Jump Controls -->
+          <div class="page-nav">
+            <button class="page-step-btn" id="btn-prev-page" title="Previous Page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <div class="page-input-wrapper">
+              <span>Page</span>
+              <input type="number" id="input-current-page" min="1" value="1">
+              <span id="label-total-pages">/ 228</span>
+            </div>
+            <button class="page-step-btn" id="btn-next-page" title="Next Page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+
+          <!-- Zoom Controls -->
+          <div class="zoom-controls">
+            <button class="reader-btn" id="btn-zoom-out" title="Zoom Out">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            </button>
+            <span id="label-zoom-level">100%</span>
+            <button class="reader-btn" id="btn-zoom-in" title="Zoom In">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            </button>
+          </div>
+
+          <!-- Quick Theme Switch -->
+          <button class="reader-btn" id="btn-reader-theme" title="Switch Theme (Light, Warm, Dark)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
+          </button>
+
+          <!-- Bookmark Toggle -->
+          <button class="reader-btn" id="btn-reader-bookmark" title="Bookmark Page">
+            <svg id="svg-bookmark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </button>
+
+          <!-- In-Book Search -->
+          <button class="reader-btn" id="btn-reader-search" title="Search in book">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- PDF Canvas Container -->
+      <div id="pdf-viewer-container" class="pdf-container">
+        <div id="pdf-viewer" class="pdf-viewer">
+          <!-- Rendered PDF Pages go here -->
+        </div>
+      </div>
+
+      <!-- Quick Page Indicator on mobile / overlay -->
+      <div id="reader-floating-pill" class="floating-pill">
+        <span id="pill-text">Page 1 of 228</span>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 7. SEARCH MODAL                           -->
+    <!-- ========================================== -->
+    <div id="modal-search" class="modal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Search Books</h3>
+          <button class="close-btn" id="btn-close-search">&times;</button>
+        </div>
+        <div class="modal-search-bar">
+          <input type="text" id="input-global-search" placeholder="Type words or phrase (e.g. covenant, repentance, cave, flood)...">
+          <button id="btn-execute-search" class="action-btn-primary">Search</button>
+        </div>
+        <div class="search-scope-tabs">
+          <button class="tab-btn active" data-scope="all">Both Books</button>
+          <button class="tab-btn" data-scope="prophets">Stories of the Prophets</button>
+          <button class="tab-btn" data-scope="companions">Companions</button>
+        </div>
+        <div class="search-results-info" id="search-results-info">Enter a term to search original texts.</div>
+        <div class="search-results-list" id="search-results-list">
+          <!-- Results injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 8. BOOKMARKS MODAL                        -->
+    <!-- ========================================== -->
+    <div id="modal-bookmarks" class="modal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Saved Bookmarks</h3>
+          <button class="close-btn" id="btn-close-bookmarks">&times;</button>
+        </div>
+        <div class="bookmarks-list" id="bookmarks-list">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 9. SETTINGS MODAL                         -->
+    <!-- ========================================== -->
+    <div id="modal-settings" class="modal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Settings</h3>
+          <button class="close-btn" id="btn-close-settings">&times;</button>
+        </div>
+        <div class="settings-content">
+          <div class="setting-group">
+            <label class="setting-label">Reading Theme</label>
+            <div class="theme-picker">
+              <button class="theme-choice-btn active" data-theme="theme-light">
+                <span class="preview-swatch light-swatch"></span>
+                <span>Light</span>
+              </button>
+              <button class="theme-choice-btn" data-theme="theme-warm">
+                <span class="preview-swatch warm-swatch"></span>
+                <span>Warm Cream</span>
+              </button>
+              <button class="theme-choice-btn" data-theme="theme-dark">
+                <span class="preview-swatch dark-swatch"></span>
+                <span>Dark</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Default Text / Page Zoom</label>
+            <select id="select-default-zoom" class="custom-select">
+              <option value="1.0">100% (Standard)</option>
+              <option value="1.25" selected>125% (Comfortable)</option>
+              <option value="1.5">150% (Large)</option>
+              <option value="1.75">175% (Extra Large)</option>
+            </select>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Reading Progress Management</label>
+            <p class="setting-hint">All reading positions and bookmarks are saved securely on this device.</p>
+            <button id="btn-reset-progress" class="btn-destructive">
+              Reset All Reading Progress & Bookmarks
+            </button>
+          </div>
+
+          <div class="setting-group about-group">
+            <label class="setting-label">About Qisas</label>
+            <div class="about-card">
+              <h4>Qisas • Version 1.0.0</h4>
+              <p>An offline digital reading application preserving the complete, unaltered texts of:</p>
+              <ul>
+                <li><strong>Stories of the Prophets</strong> by Al-Imam Ibn Kathir</li>
+                <li><strong>Stories of the Companions</strong> (Biographies of the Sahaabah)</li>
+              </ul>
+              <div class="guarantee-box">
+                <span class="guarantee-icon">🛡️</span>
+                <span>Strict preservation verified: zero alterations, zero additions, zero AI-rewriting.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Dialog -->
+    <div id="modal-confirm" class="modal">
+      <div class="modal-dialog small-dialog">
+        <h4 id="confirm-title">Reset Reading Progress?</h4>
+        <p id="confirm-message">Are you sure you want to reset all reading positions and bookmarks? This action cannot be undone.</p>
+        <div class="confirm-actions">
+          <button id="btn-confirm-cancel" class="action-btn-secondary">Cancel</button>
+          <button id="btn-confirm-proceed" class="action-btn-destructive">Reset Progress</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Data files -->
+  <script src="js/prophets-data.js"></script>
+  <script src="js/companions-data.js"></script>
+  <script src="js/search-data.js"></script>
+  <!-- Main application script -->
+  <script src="js/app.js"></script>
+</body>
+</html>
