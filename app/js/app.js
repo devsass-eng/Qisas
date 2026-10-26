@@ -32,7 +32,10 @@
       fontSize: 18,
       fontFamily: 'font-serif',
       ttsPersona: 'balanced',
-      ttsVoiceURI: ''
+      ttsVoiceURI: '',
+      ttsDefaultSpeed: 1.0,
+      ttsAutoNext: true,
+      ttsHighlightStyle: 'tint_bar'
     }
   };
 
@@ -103,6 +106,21 @@
     const personaSelect = document.getElementById('select-tts-persona');
     if (personaSelect) {
       personaSelect.value = state.settings.ttsPersona || 'balanced';
+    }
+
+    const speedSelect = document.getElementById('select-tts-default-speed');
+    if (speedSelect) {
+      speedSelect.value = String(state.settings.ttsDefaultSpeed !== undefined ? state.settings.ttsDefaultSpeed : 1.0);
+    }
+
+    const autoNextToggle = document.getElementById('toggle-tts-autonext');
+    if (autoNextToggle) {
+      autoNextToggle.checked = state.settings.ttsAutoNext !== undefined ? state.settings.ttsAutoNext : true;
+    }
+
+    const highlightStyleSelect = document.getElementById('select-tts-highlight-style');
+    if (highlightStyleSelect) {
+      highlightStyleSelect.value = state.settings.ttsHighlightStyle || 'tint_bar';
     }
 
     populateTTSVoicesDropdown();
@@ -494,6 +512,35 @@
     // Scroll to top of reading area
     const mainEl = document.getElementById('story-reader-main');
     if (mainEl) mainEl.scrollTop = 0;
+  }
+
+  function advanceToNextStoryOrSection() {
+    if (state.activeBook === 'prophets' && state.activeProphet) {
+      const prophet = state.activeProphet;
+      const totalSec = prophet.sections ? prophet.sections.length : 1;
+      // 1. Next section in current prophet
+      if (state.activeSectionIndex < totalSec - 1) {
+        openStoryReader('prophets', prophet.id, state.activeSectionIndex + 1);
+        return true;
+      }
+      // 2. Next prophet in collection
+      const pList = getProphetsData();
+      const currentPIdx = pList.findIndex(p => p.id === prophet.id || p.num === prophet.num);
+      if (currentPIdx !== -1 && currentPIdx < pList.length - 1) {
+        const nextProphet = pList[currentPIdx + 1];
+        openStoryReader('prophets', nextProphet.id, 0);
+        return true;
+      }
+    } else if (state.activeBook === 'companions' && state.activeCompanion) {
+      const cList = getCompanionsData();
+      const currentCIdx = cList.findIndex(c => c.id === state.activeCompanion.id || c.num === state.activeCompanion.num);
+      if (currentCIdx !== -1 && currentCIdx < cList.length - 1) {
+        const nextCompanion = cList[currentCIdx + 1];
+        openStoryReader('companions', nextCompanion.id, 0);
+        return true;
+      }
+    }
+    return false;
   }
 
   function renderStoryArticle(title, arabicName, sectionTitle, content, currentIdx, totalCount) {
@@ -1242,6 +1289,38 @@
       });
     }
 
+    // Default Reading Speed
+    const speedSelect = document.getElementById('select-tts-default-speed');
+    if (speedSelect) {
+      speedSelect.value = String(state.settings.ttsDefaultSpeed !== undefined ? state.settings.ttsDefaultSpeed : 1.0);
+      speedSelect.addEventListener('change', (e) => {
+        state.settings.ttsDefaultSpeed = parseFloat(e.target.value) || 1.0;
+        saveSettings();
+        // If TTS is currently defined and rate label exists, synchronize
+        document.dispatchEvent(new CustomEvent('tts-default-speed-changed', { detail: { speed: state.settings.ttsDefaultSpeed } }));
+      });
+    }
+
+    // Continuous Listening Toggle (Auto-Play Next Section)
+    const autoNextToggle = document.getElementById('toggle-tts-autonext');
+    if (autoNextToggle) {
+      autoNextToggle.checked = state.settings.ttsAutoNext !== undefined ? state.settings.ttsAutoNext : true;
+      autoNextToggle.addEventListener('change', (e) => {
+        state.settings.ttsAutoNext = e.target.checked;
+        saveSettings();
+      });
+    }
+
+    // Spoken Highlight Style
+    const highlightStyleSelect = document.getElementById('select-tts-highlight-style');
+    if (highlightStyleSelect) {
+      highlightStyleSelect.value = state.settings.ttsHighlightStyle || 'tint_bar';
+      highlightStyleSelect.addEventListener('change', (e) => {
+        state.settings.ttsHighlightStyle = e.target.value;
+        saveSettings();
+      });
+    }
+
     const btnPreviewVoice = document.getElementById('btn-preview-tts');
     const previewLabel = document.getElementById('preview-tts-label');
     if (btnPreviewVoice && ('speechSynthesis' in window)) {
@@ -1508,8 +1587,9 @@
       chunkIndex: 0,
       paused: false,
       active: false,
-      rate: 1.0,
+      rate: state.settings.ttsDefaultSpeed !== undefined ? state.settings.ttsDefaultSpeed : 1.0,
       highlightEl: null, // span currently highlighted
+      isAutoAdvancing: false
     };
 
     const RATES = [0.5, 0.7, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0];
@@ -1532,6 +1612,19 @@
     const iconPlay     = document.getElementById('tts-icon-play');
 
     if (!bar || !btnStart) return;
+
+    if (speedLabel) speedLabel.textContent = (tts.rate).toFixed(1) + '×';
+
+    // Sync speed when updated in settings
+    document.addEventListener('tts-default-speed-changed', (e) => {
+      const sp = e.detail && e.detail.speed ? e.detail.speed : 1.0;
+      tts.rate = sp;
+      if (speedLabel) speedLabel.textContent = (tts.rate).toFixed(1) + '×';
+      if (tts.active && !tts.paused) {
+        tts.synth.cancel();
+        speakChunk(tts.chunkIndex);
+      }
+    });
 
     populateTTSVoicesDropdown();
 
@@ -1653,11 +1746,13 @@
     // ---- Clear word highlight ----
     function clearHighlight() {
       if (tts.highlightEl) {
-        tts.highlightEl.classList.remove('tts-word-highlight');
+        tts.highlightEl.classList.remove('tts-para-active', 'style-tint_bar', 'style-bar_only', 'style-underline', 'tts-word-highlight');
         tts.highlightEl = null;
       }
       // also clear any paragraph-level highlight
-      document.querySelectorAll('.tts-para-active').forEach(el => el.classList.remove('tts-para-active'));
+      document.querySelectorAll('.tts-para-active').forEach(el => {
+        el.classList.remove('tts-para-active', 'style-tint_bar', 'style-bar_only', 'style-underline');
+      });
     }
 
     // ---- Highlight paragraph being read & scroll to it ----
@@ -1665,7 +1760,8 @@
       clearHighlight();
       if (!tts.chunks[idx]) return;
       const el = tts.chunks[idx].el;
-      el.classList.add('tts-para-active');
+      const style = state.settings.ttsHighlightStyle || 'tint_bar';
+      el.classList.add('tts-para-active', `style-${style}`);
       tts.highlightEl = el;
       // auto-scroll so it's visible
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1674,7 +1770,27 @@
     // ---- Speak a single chunk ----
     function speakChunk(idx) {
       if (idx >= tts.chunks.length) {
-        // finished all chunks
+        // finished all chunks in current section
+        if (state.settings.ttsAutoNext) {
+          tts.isAutoAdvancing = true;
+          const advanced = advanceToNextStoryOrSection();
+          if (advanced) {
+            setTimeout(() => {
+              tts.isAutoAdvancing = false;
+              if (tts.active) {
+                tts.chunks = extractChunks();
+                if (tts.chunks.length) {
+                  tts.chunkIndex = 0;
+                  speakChunk(0);
+                  return;
+                }
+              }
+              stopTTS();
+            }, 400);
+            return;
+          }
+          tts.isAutoAdvancing = false;
+        }
         stopTTS();
         return;
       }
@@ -1818,9 +1934,9 @@
     btnSpeedUp.addEventListener('click', () => changeSpeed(1));
     btnSpeedDn.addEventListener('click', () => changeSpeed(-1));
 
-    // Stop when story changes (new section loaded)
+    // Stop when story changes (new section loaded by user)
     document.addEventListener('story-section-changed', () => {
-      if (tts.active) stopTTS();
+      if (tts.active && !tts.isAutoAdvancing) stopTTS();
     });
   }
 

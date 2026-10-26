@@ -503,6 +503,37 @@
               </select>
             </div>
 
+            <div class="tts-setting-field">
+              <label class="tts-sublabel" for="select-tts-default-speed">Default Reading Speed</label>
+              <select id="select-tts-default-speed" class="custom-select">
+                <option value="0.7">0.7× Relaxed / Slow</option>
+                <option value="0.8">0.8× Calm Pace</option>
+                <option value="1.0" selected>1.0× Normal Pace (Default)</option>
+                <option value="1.2">1.2× Brisk Pace</option>
+                <option value="1.5">1.5× Fast Pace</option>
+              </select>
+            </div>
+
+            <div class="tts-setting-field tts-toggle-row">
+              <div class="tts-toggle-info">
+                <label class="tts-sublabel" for="toggle-tts-autonext">Continuous Listening</label>
+                <span class="setting-hint">Automatically play next chapter when current finishes</span>
+              </div>
+              <label class="switch-toggle" for="toggle-tts-autonext">
+                <input type="checkbox" id="toggle-tts-autonext" checked>
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div class="tts-setting-field">
+              <label class="tts-sublabel" for="select-tts-highlight-style">Spoken Highlight Style</label>
+              <select id="select-tts-highlight-style" class="custom-select">
+                <option value="tint_bar" selected>Soft Green Tint &amp; Accent Bar</option>
+                <option value="bar_only">Left Accent Bar Only (Minimal)</option>
+                <option value="underline">Subtle Underline Accent</option>
+              </select>
+            </div>
+
             <div class="tts-setting-action">
               <button type="button" id="btn-preview-tts" class="btn-voice-preview" title="Listen to a voice sample">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
