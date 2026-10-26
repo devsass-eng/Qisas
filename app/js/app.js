@@ -8,7 +8,12 @@
 
   // Configure PDF.js Worker
   if (window.pdfjsLib) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs/pdf.worker.js';
+    // If running on file:/// protocol, use main-thread execution to avoid browser worker CORS blocking
+    if (window.location && window.location.protocol === 'file:') {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    } else {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs/pdf.worker.js';
+    }
   }
 
   // Application State
@@ -437,6 +442,31 @@
     companions: 'Stories of the Companions'
   };
 
+  // In-memory cache for decoded PDF Uint8Array buffers
+  const pdfBytesCache = {};
+
+  function getPdfData(collection) {
+    if (pdfBytesCache[collection]) {
+      return pdfBytesCache[collection];
+    }
+    const b64 = (collection === 'prophets') ? window.PROPHETS_PDF_BASE64 : window.COMPANIONS_PDF_BASE64;
+    if (!b64) return null;
+
+    try {
+      const binary = atob(b64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      pdfBytesCache[collection] = bytes;
+      return bytes;
+    } catch (e) {
+      console.error('Error decoding embedded PDF data:', e);
+      return null;
+    }
+  }
+
   function openReader(collection, targetPage, itemTitle, headingTitle) {
     state.activeBook = collection;
     state.currentPageNum = targetPage || 1;
@@ -448,18 +478,21 @@
     navigateTo('screen-reader');
 
     const pdfPath = PDF_FILES[collection];
-    loadPdfDocument(pdfPath, state.currentPageNum);
+    loadPdfDocument(collection, pdfPath, state.currentPageNum);
   }
 
-  function loadPdfDocument(url, initialPage) {
+  function loadPdfDocument(collection, url, initialPage) {
     const viewer = document.getElementById('pdf-viewer');
     viewer.innerHTML = '<div style="padding: 40px; color: var(--text-secondary); text-align: center;">Loading original book content...</div>';
 
-    window.pdfjsLib.getDocument({
-      url: url,
-      cMapUrl: 'pdfjs/cmaps/',
-      cMapPacked: true
-    }).promise.then(function (pdfDoc) {
+    // Check if embedded binary data is available (eliminates all file:/// CORS restrictions)
+    const embeddedBytes = getPdfData(collection);
+    const docSource = embeddedBytes ? { data: embeddedBytes } : { url: url };
+
+    docSource.cMapUrl = 'pdfjs/cmaps/';
+    docSource.cMapPacked = true;
+
+    window.pdfjsLib.getDocument(docSource).promise.then(function (pdfDoc) {
       state.currentPdfDoc = pdfDoc;
       state.totalPages = pdfDoc.numPages;
 
