@@ -29,7 +29,8 @@
     bookmarks: [],
     settings: {
       theme: 'theme-light',
-      fontSize: 18
+      fontSize: 18,
+      fontFamily: 'font-serif'
     }
   };
 
@@ -81,10 +82,16 @@
 
     applyTheme(state.settings.theme || 'theme-light');
     applyFontSize(state.settings.fontSize || 18);
+    applyFontFamily(state.settings.fontFamily || 'font-serif');
 
     const fontSelect = document.getElementById('select-default-zoom');
     if (fontSelect) {
       fontSelect.value = String(state.settings.fontSize || 18);
+    }
+
+    const familySelect = document.getElementById('select-font-family');
+    if (familySelect) {
+      familySelect.value = state.settings.fontFamily || 'font-serif';
     }
 
     updateMainMenuPreview();
@@ -117,7 +124,7 @@
   }
 
   function applyTheme(themeClass) {
-    document.body.classList.remove('theme-light', 'theme-warm', 'theme-dark');
+    document.body.classList.remove('theme-light', 'theme-warm', 'theme-dark', 'theme-amoled');
     document.body.classList.add(themeClass);
     state.settings.theme = themeClass;
     saveSettings();
@@ -125,6 +132,13 @@
     document.querySelectorAll('.theme-choice-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.theme === themeClass);
     });
+  }
+
+  function applyFontFamily(fontClass) {
+    document.body.classList.remove('font-serif', 'font-sans');
+    document.body.classList.add(fontClass);
+    state.settings.fontFamily = fontClass;
+    saveSettings();
   }
 
   function applyFontSize(size) {
@@ -474,18 +488,39 @@
     `;
 
     if (content) {
+      // Calculate estimated read time (~200 words per minute)
+      const wordCount = content.split(/\s+/).filter(Boolean).length;
+      const readMinutes = Math.max(1, Math.ceil(wordCount / 200));
+      const readTimeEl = document.getElementById('reader-read-time');
+      if (readTimeEl) {
+        readTimeEl.textContent = `~${readMinutes} min read (${wordCount} words)`;
+      }
+
       const paragraphs = content.split('\n\n').map(p => p.trim()).filter(Boolean);
-      paragraphs.forEach(p => {
+      paragraphs.forEach((p, pIndex) => {
         // Detect Quranic quotes, revelations, and hadith citations
         const isQuote = p.startsWith('"') || p.startsWith('“') || 
                         p.includes('Allah the Almighty revealed:') || 
                         p.includes('Allah said:') ||
                         p.includes('Allah revealed:');
 
+        const safeP = escapeHtml(p);
+        const copyBtn = `<button class="btn-copy-quote" data-para-index="${pIndex}" title="Copy passage">Copy</button>`;
+
         if (isQuote) {
-          html += `<blockquote class="story-quote-block">${escapeHtml(p)}</blockquote>`;
+          html += `
+            <div class="story-paragraph-wrapper">
+              <blockquote class="story-quote-block">${safeP}</blockquote>
+              ${copyBtn}
+            </div>
+          `;
         } else {
-          html += `<p class="story-paragraph">${escapeHtml(p)}</p>`;
+          html += `
+            <div class="story-paragraph-wrapper">
+              <p class="story-paragraph">${safeP}</p>
+              ${copyBtn}
+            </div>
+          `;
         }
       });
     } else {
@@ -533,6 +568,55 @@
       bottomNext.addEventListener('click', () => {
         openStoryReader('prophets', state.activeProphet.id, currentIdx + 1);
       });
+    }
+
+    // Attach copy passage buttons
+    article.querySelectorAll('.btn-copy-quote').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const wrapper = btn.closest('.story-paragraph-wrapper');
+        const textNode = wrapper ? (wrapper.querySelector('blockquote') || wrapper.querySelector('p')) : null;
+        if (textNode) {
+          const passage = textNode.textContent.trim();
+          const attribution = `\n\n— ${title} (${sectionTitle}), Qisas`;
+          copyTextToClipboard(passage + attribution);
+          showToast('Passage copied to clipboard');
+        }
+      });
+    });
+  }
+
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopyText(text));
+    } else {
+      fallbackCopyText(text);
+    }
+  }
+
+  function fallbackCopyText(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+    } catch (e) {
+      console.warn('Copy command error:', e);
+    }
+    document.body.removeChild(ta);
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('qisas-toast');
+    if (toast) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2200);
     }
   }
 
@@ -1091,6 +1175,44 @@
         state.settings.fontSize = newSize;
         applyFontSize(newSize);
         saveSettings();
+      });
+    }
+
+    // Typography Font Family Setting
+    const familySelect = document.getElementById('select-font-family');
+    if (familySelect) {
+      familySelect.addEventListener('change', (e) => {
+        applyFontFamily(e.target.value);
+      });
+    }
+
+    // Zen Mode Toggles
+    const btnToggleZen = document.getElementById('btn-toggle-zen');
+    if (btnToggleZen) {
+      btnToggleZen.addEventListener('click', () => {
+        document.body.classList.toggle('zen-mode');
+      });
+    }
+
+    const btnExitZen = document.getElementById('btn-exit-zen');
+    if (btnExitZen) {
+      btnExitZen.addEventListener('click', () => {
+        document.body.classList.remove('zen-mode');
+      });
+    }
+
+    // Scroll Progress Tracker
+    const readerMain = document.getElementById('story-reader-main');
+    const progressBar = document.getElementById('reader-reading-progress');
+    if (readerMain && progressBar) {
+      readerMain.addEventListener('scroll', () => {
+        const totalHeight = readerMain.scrollHeight - readerMain.clientHeight;
+        if (totalHeight > 0) {
+          const pct = Math.min(100, Math.max(0, (readerMain.scrollTop / totalHeight) * 100));
+          progressBar.style.width = pct + '%';
+        } else {
+          progressBar.style.width = '0%';
+        }
       });
     }
 

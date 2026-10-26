@@ -86,9 +86,150 @@ body.theme-dark {
   --primary-btn-bg: #047857;
   --primary-btn-text: #ffffff;
   --card-hover-border: #d4af37;
-  /* Dark mode invert for PDF canvas */
   --pdf-filter: invert(0.92) hue-rotate(180deg) contrast(1.1) brightness(0.9);
 }
+
+/* AMOLED Pitch Black Theme */
+/* Reading Typography Options */
+body.font-serif #reader-story-article {
+  font-family: "Times New Roman", Times, Georgia, "Traditional Arabic", serif;
+}
+
+body.font-sans #reader-story-article {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Reading Progress Bar at the top of Reader */
+.reader-reading-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold-500), var(--emerald-600));
+  width: 0%;
+  transition: width 0.1s ease-out;
+  z-index: 100;
+}
+
+/* Reader Stats Bar */
+.reader-stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: var(--bg-surface-elevated);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.reader-stats-left, .reader-stats-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.zen-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--text-accent);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.zen-toggle-btn:hover {
+  background: var(--bg-card-subtle);
+}
+
+/* Zen / Focus Mode */
+body.zen-mode #reader-toolbar,
+body.zen-mode #reader-sections-bar,
+body.zen-mode .reader-stats-bar,
+body.zen-mode .story-bottom-nav {
+  display: none !important;
+}
+body.zen-mode .story-reader-main {
+  padding-top: 24px !important;
+}
+.zen-exit-floating-btn {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--primary-btn-bg);
+  color: var(--primary-btn-text);
+  border: 1px solid var(--gold-500);
+  padding: 8px 14px;
+  border-radius: 30px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  cursor: pointer;
+  z-index: 2000;
+}
+body.zen-mode .zen-exit-floating-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Copy Quote Button on Paragraphs */
+.story-paragraph-wrapper {
+  position: relative;
+  margin-bottom: 1.25em;
+}
+.btn-copy-quote {
+  position: absolute;
+  top: 0;
+  right: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.story-paragraph-wrapper:hover .btn-copy-quote {
+  opacity: 0.85;
+}
+.btn-copy-quote:hover {
+  opacity: 1 !important;
+  color: var(--text-accent);
+  border-color: var(--border-focus);
+}
+
+/* Quick Copied Toast */
+.qisas-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(50px);
+  background: var(--emerald-900);
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  border: 1px solid var(--gold-400);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 3000;
+  pointer-events: none;
+}
+.qisas-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Swatch for AMOLED */
+.amoled-swatch {
+  background: #000000;
+  border: 1px solid #333333;
+}
+
 
 /* Base Reset */
 * {

@@ -256,6 +256,9 @@
 
       <!-- Digital Reader Container -->
       <div id="story-reader-container" class="story-reader-container">
+        <!-- Progress bar tracking scroll reading progress -->
+        <div id="reader-reading-progress" class="reader-reading-progress-bar"></div>
+
         <!-- Subtitle Jump / Stepper Bar (shown when story has multiple subtitles) -->
         <div id="reader-sections-bar" class="reader-sections-bar">
           <button id="btn-prev-section" class="section-nav-btn" title="Previous Subtitle">
@@ -273,6 +276,18 @@
           </button>
         </div>
 
+        <!-- Reader Reading Stats & Zen Toggle -->
+        <div class="reader-stats-bar" id="reader-stats-bar">
+          <div class="reader-stats-left">
+            <span id="reader-read-time">~2 min read</span>
+          </div>
+          <div class="reader-stats-right">
+            <button class="zen-toggle-btn" id="btn-toggle-zen" title="Toggle Zen / Focus Mode">
+              Zen Mode
+            </button>
+          </div>
+        </div>
+
         <!-- Main Reading Scroll Area -->
         <main class="story-reader-main" id="story-reader-main">
           <article id="reader-story-article" class="story-content">
@@ -280,6 +295,12 @@
           </article>
         </main>
       </div>
+
+      <!-- Floating Button to Exit Zen Mode -->
+      <button id="btn-exit-zen" class="zen-exit-floating-btn" title="Exit Focus Mode">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+        <span>Exit Zen Mode</span>
+      </button>
 
       <!-- Quick Section Toast / Pill -->
       <div id="reader-floating-pill" class="floating-pill">
@@ -352,7 +373,19 @@
                 <span class="preview-swatch dark-swatch"></span>
                 <span>Dark</span>
               </button>
+              <button class="theme-choice-btn" data-theme="theme-amoled">
+                <span class="preview-swatch amoled-swatch"></span>
+                <span>AMOLED</span>
+              </button>
             </div>
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Typography Style</label>
+            <select id="select-font-family" class="custom-select">
+              <option value="font-serif" selected>Classic Serif (Traditional &amp; Bookish)</option>
+              <option value="font-sans">Modern Clean Sans-Serif</option>
+            </select>
           </div>
 
           <div class="setting-group">
@@ -405,6 +438,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Offline Feedback Toast -->
+    <div id="qisas-toast" class="qisas-toast">Copied to clipboard</div>
 
   </div>
 
