@@ -38,7 +38,7 @@ CLASSES_DIR = os.path.join(BUILD_DIR, 'classes')
 RES_COMPILED_DIR = os.path.join(BUILD_DIR, 'res-compiled')
 GEN_DIR = os.path.join(BUILD_DIR, 'gen')
 ASSETS_DIR = os.path.join(ANDROID_BUILD, 'assets')
-KEYSTORE = os.path.join(BUILD_DIR, 'debug.keystore')
+KEYSTORE = os.path.join(ANDROID_BUILD, 'qisas.keystore')
 
 def run(cmd, desc="", shell=False):
     print(f'\n{"="*60}')
@@ -191,26 +191,27 @@ def main():
 
     print(f'  ✓ Unsigned APK: {unsigned_apk}')
 
-    # ── Step 7: Generate debug keystore ──
+    # ── Step 7: Generate permanent release keystore ──
     if not os.path.exists(KEYSTORE):
         run(
             [KEYTOOL, '-genkey', '-v',
              '-keystore', KEYSTORE,
-             '-storepass', 'android',
-             '-alias', 'androiddebugkey',
-             '-keypass', 'android',
+             '-storepass', 'qisasapp',
+             '-alias', 'qisaskey',
+             '-keypass', 'qisasapp',
              '-keyalg', 'RSA',
              '-keysize', '2048',
-             '-validity', '10000',
-             '-dname', 'CN=Debug,OU=Debug,O=Debug,L=Debug,ST=Debug,C=US'],
-            'Step 7: Generating debug keystore'
+             '-startdate', '2020/01/01 00:00:00',
+             '-validity', '20000',
+             '-dname', 'CN=Qisas,OU=App,O=Qisas,L=City,ST=State,C=US'],
+            'Step 7: Generating permanent release keystore'
         )
     print(f'  ✓ Keystore: {KEYSTORE}')
 
     # ── Step 8: Align the APK ──
     aligned_apk = os.path.join(BUILD_DIR, 'qisas-aligned.apk')
     run(
-        [ZIPALIGN, '-f', '-p', '4', unsigned_apk, aligned_apk],
+        [ZIPALIGN, '-f', '4', unsigned_apk, aligned_apk],
         'Step 8: Aligning APK with zipalign'
     )
     print(f'  ✓ Aligned APK: {aligned_apk}')
@@ -222,9 +223,13 @@ def main():
     run(
         [APKSIGNER, 'sign',
          '--ks', KEYSTORE,
-         '--ks-pass', 'pass:android',
-         '--ks-key-alias', 'androiddebugkey',
-         '--key-pass', 'pass:android',
+         '--ks-pass', 'pass:qisasapp',
+         '--ks-key-alias', 'qisaskey',
+         '--key-pass', 'pass:qisasapp',
+         '--v1-signing-enabled', 'true',
+         '--v2-signing-enabled', 'true',
+         '--v3-signing-enabled', 'true',
+         '--min-sdk-version', '21',
          final_apk],
         'Step 9: Signing APK'
     )
@@ -232,7 +237,7 @@ def main():
 
     # ── Step 10: Verify ──
     run(
-        [APKSIGNER, 'verify', '--verbose', final_apk],
+        [APKSIGNER, 'verify', '--verbose', '--print-certs', final_apk],
         'Step 10: Verifying APK signature'
     )
 
