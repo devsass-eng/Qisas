@@ -232,6 +232,18 @@
       }
     }
 
+    if (screenId === 'screen-reader') {
+      document.body.classList.add('reader-active');
+      const bar = document.getElementById('tts-bar');
+      if (bar) bar.style.display = 'block';
+      document.dispatchEvent(new CustomEvent('reader-opened'));
+    } else {
+      document.body.classList.remove('reader-active');
+      const bar = document.getElementById('tts-bar');
+      if (bar) bar.style.display = '';
+      document.dispatchEvent(new CustomEvent('reader-closed'));
+    }
+
     if (screenId === 'screen-last-read') {
       renderLastReadScreen();
     } else if (screenId === 'screen-main-menu') {
@@ -1581,9 +1593,20 @@
 
   function populateTTSVoicesDropdown() {
     const voiceSelect = document.getElementById('select-tts-voice');
-    if (!voiceSelect || !('speechSynthesis' in window)) return;
+    if (!voiceSelect) return;
 
-    const voices = window.speechSynthesis.getVoices() || [];
+    let voices = [];
+    if (typeof window.AndroidTTS !== 'undefined' && window.AndroidTTS.getVoicesJson) {
+      try {
+        const raw = window.AndroidTTS.getVoicesJson();
+        voices = JSON.parse(raw) || [];
+      } catch (e) {
+        voices = [];
+      }
+    } else if ('speechSynthesis' in window) {
+      voices = window.speechSynthesis.getVoices() || [];
+    }
+
     if (!voices.length) return;
 
     const savedVoiceURI = state.settings.ttsVoiceURI || '';
@@ -1599,7 +1622,8 @@
 
     sorted.forEach(v => {
       const opt = document.createElement('option');
-      opt.value = v.voiceURI || v.name;
+      const vKey = v.voiceURI || v.name;
+      opt.value = vKey;
 
       let genderHint = '';
       const info = ((v.name || '') + ' ' + (v.voiceURI || '')).toLowerCase();
@@ -1613,7 +1637,7 @@
       }
 
       opt.textContent = `${v.name}${genderHint} (${v.lang})`;
-      if (savedVoiceURI && (v.voiceURI === savedVoiceURI || v.name === savedVoiceURI)) {
+      if (savedVoiceURI && (vKey === savedVoiceURI || v.name === savedVoiceURI)) {
         opt.selected = true;
       }
       voiceSelect.appendChild(opt);
@@ -1626,11 +1650,12 @@
     };
   }
 
-  function initTTS() {
-    if (!('speechSynthesis' in window)) return; // device has no TTS
+  window.onAndroidTTSReady = () => {
+    populateTTSVoicesDropdown();
+  };
 
+  function initTTS() {
     const tts = {
-      synth: window.speechSynthesis,
       chunks: [],        // array of paragraph text strings
       chunkIndex: 0,
       paused: false,
@@ -1663,13 +1688,22 @@
 
     if (speedLabel) speedLabel.textContent = (tts.rate).toFixed(1) + '×';
 
+    function stopSpeech() {
+      if (typeof window.AndroidTTS !== 'undefined' && window.AndroidTTS.stop) {
+        try { window.AndroidTTS.stop(); } catch (e) {}
+      }
+      if ('speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+      }
+    }
+
     // Sync speed when updated in settings
     document.addEventListener('tts-default-speed-changed', (e) => {
       const sp = e.detail && e.detail.speed ? e.detail.speed : 1.0;
       tts.rate = sp;
       if (speedLabel) speedLabel.textContent = (tts.rate).toFixed(1) + '×';
       if (tts.active && !tts.paused) {
-        tts.synth.cancel();
+        stopSpeech();
         speakChunk(tts.chunkIndex);
       }
     });
@@ -1677,8 +1711,15 @@
     populateTTSVoicesDropdown();
 
     // Show/hide bar when reader opens or closes
-    function showBar()  { document.body.classList.add('reader-active'); }
-    function hideBar()  { document.body.classList.remove('reader-active'); stopTTS(); }
+    function showBar()  {
+      document.body.classList.add('reader-active');
+      if (bar) bar.style.display = 'block';
+    }
+    function hideBar()  {
+      document.body.classList.remove('reader-active');
+      if (bar) bar.style.display = '';
+      stopTTS();
+    }
 
     // Intercept existing screen navigation to toggle bar
     const origNavigateTo = window.navigateTo;
@@ -1692,6 +1733,9 @@
     // by observing classList changes on screen-reader
     const readerScreen = document.getElementById('screen-reader');
     if (readerScreen) {
+      if (readerScreen.classList.contains('active')) {
+        showBar();
+      }
       const obs = new MutationObserver(() => {
         if (readerScreen.classList.contains('active')) { showBar(); }
         else { hideBar(); }
@@ -1938,17 +1982,12 @@
       updateProgress();
       highlightChunk(idx);
 
-      const utt = new SpeechSynthesisUtterance(tts.chunks[idx].text);
-      configureUtterance(utt, tts.rate);
-
       clearSentenceTimer();
       let boundaryFired = false;
 
-      // Sentence boundary event for real-time sentence highlighting
-      utt.onboundary = (e) => {
+      function handleBoundary(charIdx) {
         boundaryFired = true;
         if (state.settings.highlightSentence === false) return;
-        const charIdx = e.charIndex;
         if (charIdx === undefined || !currentChunkSentences.length) return;
         for (let i = 0; i < currentChunkSentences.length; i++) {
           const span = currentChunkSentences[i];
@@ -1962,49 +2001,100 @@
             break;
           }
         }
-      };
-
-      // Fallback timer: if the device TTS doesn't fire onboundary events, advance sentences smoothly
-      if (currentChunkSentences.length > 1) {
-        let curSIdx = 0;
-        function scheduleSentenceFallback() {
-          clearSentenceTimer();
-          if (boundaryFired || !tts.active || tts.paused) return;
-          if (curSIdx >= currentChunkSentences.length - 1) return;
-
-          const sText = currentChunkSentences[curSIdx].textContent || '';
-          const wordCount = sText.trim().split(/\s+/).length || 5;
-          const wordsPerSec = (140 / 60) * (tts.rate || 1.0);
-          const durationMs = Math.max(1200, (wordCount / wordsPerSec) * 1000);
-
-          sentenceTimer = setTimeout(() => {
-            if (boundaryFired || !tts.active || tts.paused) return;
-            curSIdx++;
-            if (currentChunkSentences[curSIdx]) {
-              currentChunkSentences.forEach(s => s.classList.remove('tts-sentence-active'));
-              currentChunkSentences[curSIdx].classList.add('tts-sentence-active');
-              scheduleSentenceFallback();
-            }
-          }, durationMs);
-        }
-        scheduleSentenceFallback();
       }
 
-      utt.onend = () => {
-        clearSentenceTimer();
-        if (!tts.paused && tts.active) {
-          speakChunk(idx + 1);
-        }
-      };
-      utt.onerror = (e) => {
-        clearSentenceTimer();
-        if (e.error === 'interrupted' || e.error === 'canceled') return;
-        // skip broken chunk
-        if (tts.active) speakChunk(idx + 1);
-      };
+      function startSentenceFallbackTimer() {
+        if (currentChunkSentences.length > 1) {
+          let curSIdx = 0;
+          function scheduleSentenceFallback() {
+            clearSentenceTimer();
+            if (boundaryFired || !tts.active || tts.paused) return;
+            if (curSIdx >= currentChunkSentences.length - 1) return;
 
-      tts.synth.cancel(); // clear queue
-      tts.synth.speak(utt);
+            const sText = currentChunkSentences[curSIdx].textContent || '';
+            const wordCount = sText.trim().split(/\s+/).length || 5;
+            const wordsPerSec = (140 / 60) * (tts.rate || 1.0);
+            const durationMs = Math.max(1200, (wordCount / wordsPerSec) * 1000);
+
+            sentenceTimer = setTimeout(() => {
+              if (boundaryFired || !tts.active || tts.paused) return;
+              curSIdx++;
+              if (currentChunkSentences[curSIdx]) {
+                currentChunkSentences.forEach(s => s.classList.remove('tts-sentence-active'));
+                currentChunkSentences[curSIdx].classList.add('tts-sentence-active');
+                scheduleSentenceFallback();
+              }
+            }, durationMs);
+          }
+          scheduleSentenceFallback();
+        }
+      }
+
+      // Android Native TextToSpeech Engine
+      if (typeof window.AndroidTTS !== 'undefined') {
+        const personaKey = state.settings.ttsPersona || 'balanced';
+        const persona = TTS_PERSONAS[personaKey] || TTS_PERSONAS.balanced;
+        const rate = (tts.rate || 1.0) * (persona.rateMod || 1.0);
+        const pitch = persona.pitch || 1.0;
+        const voiceName = state.settings.ttsVoiceURI || '';
+        const uttId = 'utt_' + idx + '_' + Date.now();
+
+        window.onAndroidTTSStart = () => {};
+
+        window.onAndroidTTSBoundary = (id, start, end) => {
+          handleBoundary(start);
+        };
+
+        window.onAndroidTTSDone = () => {
+          clearSentenceTimer();
+          if (!tts.paused && tts.active) {
+            speakChunk(idx + 1);
+          }
+        };
+
+        window.onAndroidTTSError = () => {
+          clearSentenceTimer();
+          if (tts.active && !tts.paused) {
+            speakChunk(idx + 1);
+          }
+        };
+
+        startSentenceFallbackTimer();
+
+        try {
+          window.AndroidTTS.speak(tts.chunks[idx].text, rate, pitch, voiceName, uttId);
+        } catch (e) {
+          console.error('AndroidTTS.speak error:', e);
+        }
+        return;
+      }
+
+      // Web Speech API (Desktop / Browser)
+      if ('speechSynthesis' in window) {
+        const utt = new SpeechSynthesisUtterance(tts.chunks[idx].text);
+        configureUtterance(utt, tts.rate);
+
+        utt.onboundary = (e) => {
+          handleBoundary(e.charIndex);
+        };
+
+        startSentenceFallbackTimer();
+
+        utt.onend = () => {
+          clearSentenceTimer();
+          if (!tts.paused && tts.active) {
+            speakChunk(idx + 1);
+          }
+        };
+        utt.onerror = (e) => {
+          clearSentenceTimer();
+          if (e.error === 'interrupted' || e.error === 'canceled') return;
+          if (tts.active) speakChunk(idx + 1);
+        };
+
+        stopSpeech();
+        window.speechSynthesis.speak(utt);
+      }
     }
 
     // ---- Find first paragraph visible in the viewport ----
@@ -2054,7 +2144,7 @@
     function stopTTS() {
       tts.active = false;
       tts.paused = false;
-      tts.synth.cancel();
+      stopSpeech();
       releaseTTSWakeLock();
       clearHighlight();
       // reset UI to idle
@@ -2074,7 +2164,7 @@
         speakChunk(tts.chunkIndex); // resume from current chunk
       } else {
         tts.paused = true;
-        tts.synth.cancel();
+        stopSpeech();
         releaseTTSWakeLock();
         setPlayingIcon(false);
       }
@@ -2083,13 +2173,13 @@
     // ---- Skip to next paragraph ----
     function skipChunk() {
       if (!tts.active) return;
-      tts.synth.cancel();
+      stopSpeech();
       speakChunk(tts.chunkIndex + 1);
     }
 
     // ---- Restart ----
     function restartTTS() {
-      tts.synth.cancel();
+      stopSpeech();
       tts.paused = false;
       setPlayingIcon(true);
       speakChunk(0);
@@ -2103,7 +2193,7 @@
       speedLabel.textContent = tts.rate.toFixed(1) + '×';
       // if playing, restart current chunk at new rate
       if (tts.active && !tts.paused) {
-        tts.synth.cancel();
+        stopSpeech();
         speakChunk(tts.chunkIndex);
       }
     }

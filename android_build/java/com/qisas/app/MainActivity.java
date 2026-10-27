@@ -12,19 +12,25 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
-import android.net.Uri;
+import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
 import android.content.res.AssetManager;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
+
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-
-import android.webkit.ValueCallback;
+import java.util.Locale;
+import java.util.Set;
 
 public class MainActivity extends Activity {
 
     private WebView webView;
+    private TextToSpeech tts;
+    private boolean ttsReady = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,28 +63,28 @@ public class MainActivity extends Activity {
 
         webView.setWebChromeClient(new WebChromeClient());
 
+        // Initialize Android Native TextToSpeech Engine
+        initTTS();
+
+        // Register AndroidTTS Javascript Interface
+        webView.addJavascriptInterface(new AndroidTTSInterface(), "AndroidTTS");
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
 
-                // Intercept requests for app assets served from file:///android_asset/
                 if (url.startsWith("file:///android_asset/")) {
                     String assetPath = url.replace("file:///android_asset/", "");
-                    // URL decode the path
                     try {
                         assetPath = java.net.URLDecoder.decode(assetPath, "UTF-8");
-                    } catch (Exception e) {
-                        // keep original
-                    }
+                    } catch (Exception e) {}
                     try {
                         AssetManager am = getAssets();
                         InputStream is = am.open(assetPath);
                         String mimeType = getMimeType(assetPath);
                         return new WebResourceResponse(mimeType, "UTF-8", is);
-                    } catch (IOException e) {
-                        // Fall through to default handling
-                    }
+                    } catch (IOException e) {}
                 }
 
                 return super.shouldInterceptRequest(view, request);
@@ -86,21 +92,167 @@ public class MainActivity extends Activity {
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                if (url.startsWith("file:///android_asset/") || url.startsWith("file:///")) {
-                    return false; // Let the WebView handle it
-                }
                 return false;
             }
         });
 
-        // Make the WebView fill the screen including under the status bar
         webView.setSystemUiVisibility(
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE
             | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         );
 
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    private void initTTS() {
+        try {
+            tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+                @Override
+                public void onInit(int status) {
+                    if (status == TextToSpeech.SUCCESS) {
+                        try {
+                            int res = tts.setLanguage(Locale.US);
+                            if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                                tts.setLanguage(Locale.getDefault());
+                            }
+                        } catch (Exception e) {}
+                        ttsReady = true;
+
+                        tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                            @Override
+                            public void onStart(final String utteranceId) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (webView != null) {
+                                            webView.evaluateJavascript("if (window.onAndroidTTSStart) window.onAndroidTTSStart('" + utteranceId + "');", null);
+                                        }
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onDone(final String utteranceId) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (webView != null) {
+                                            webView.evaluateJavascript("if (window.onAndroidTTSDone) window.onAndroidTTSDone('" + utteranceId + "');", null);
+                                        }
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onError(final String utteranceId) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (webView != null) {
+                                            webView.evaluateJavascript("if (window.onAndroidTTSError) window.onAndroidTTSError('" + utteranceId + "');", null);
+                                        }
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onRangeStart(final String utteranceId, final int start, final int end, int frame) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (webView != null) {
+                                            webView.evaluateJavascript("if (window.onAndroidTTSBoundary) window.onAndroidTTSBoundary('" + utteranceId + "', " + start + ", " + end + ");", null);
+                                        }
+                                    }
+                                });
+                            }
+                        });
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (webView != null) {
+                                    webView.evaluateJavascript("if (window.onAndroidTTSReady) window.onAndroidTTSReady();", null);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        } catch (Exception e) {}
+    }
+
+    public class AndroidTTSInterface {
+        @JavascriptInterface
+        public boolean isReady() {
+            return ttsReady;
+        }
+
+        @JavascriptInterface
+        public void speak(final String text, final float rate, final float pitch, final String voiceName, final String utteranceId) {
+            if (tts == null) return;
+            if (!ttsReady) {
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        speak(text, rate, pitch, voiceName, utteranceId);
+                    }
+                }, 300);
+                return;
+            }
+            try {
+                tts.setSpeechRate(rate);
+                tts.setPitch(pitch);
+                if (voiceName != null && !voiceName.isEmpty()) {
+                    try {
+                        Set<Voice> voices = tts.getVoices();
+                        if (voices != null) {
+                            for (Voice v : voices) {
+                                if (v.getName().equals(voiceName)) {
+                                    tts.setVoice(v);
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Throwable t) {}
+                }
+                Bundle params = new Bundle();
+                params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId);
+                tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId);
+            } catch (Exception e) {}
+        }
+
+        @JavascriptInterface
+        public void stop() {
+            if (ttsReady && tts != null) {
+                try {
+                    tts.stop();
+                } catch (Exception e) {}
+            }
+        }
+
+        @JavascriptInterface
+        public String getVoicesJson() {
+            if (!ttsReady || tts == null) return "[]";
+            try {
+                Set<Voice> voices = tts.getVoices();
+                if (voices == null || voices.isEmpty()) return "[]";
+                StringBuilder sb = new StringBuilder("[");
+                boolean first = true;
+                for (Voice v : voices) {
+                    if (!first) sb.append(",");
+                    first = false;
+                    sb.append("{");
+                    sb.append("\"name\":").append(JSONObject.quote(v.getName())).append(",");
+                    sb.append("\"lang\":").append(JSONObject.quote(v.getLocale().toLanguageTag()));
+                    sb.append("}");
+                }
+                sb.append("]");
+                return sb.toString();
+            } catch (Throwable t) {
+                return "[]";
+            }
+        }
     }
 
     private String getMimeType(String path) {
@@ -122,7 +274,6 @@ public class MainActivity extends Activity {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
-            // Let the web app handle back navigation via JavaScript
             webView.evaluateJavascript(
                 "(function() { " +
                 "  if (typeof window.handleAndroidBack === 'function') { " +
@@ -166,6 +317,12 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (tts != null) {
+            try {
+                tts.stop();
+                tts.shutdown();
+            } catch (Exception e) {}
+        }
         if (webView != null) {
             webView.destroy();
         }

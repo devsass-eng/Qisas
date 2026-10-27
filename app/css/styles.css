@@ -2254,9 +2254,11 @@ body.theme-dark .result-location {
   display: none;
 }
 
-/* Show bar only when reader screen is active */
+/* Show bar whenever reader screen is active */
+#screen-reader.active .tts-bar,
+.screen.active .tts-bar,
 body.reader-active .tts-bar {
-  display: block;
+  display: block !important;
 }
 
 /* ---- Idle row ---- */
